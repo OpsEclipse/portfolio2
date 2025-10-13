@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+	/* === Light Mode === */
+	--color-bg: #F7F7F7;
+	--color-surface: #ffffff;
+	--color-border: #e5e5e5;
+
+	--color-text-primary: rgba(0, 0, 0);
+	--color-text-secondary: #000000CC;
+	--color-text-muted: #00000066;
+
+	--color-accent: #007aff;
+	--color-accent-muted: #cce5ff;
+
+	--color-status-busy: #e67e22;
+	--color-status-available: #2ecc71;
+
+	--color-pill-bg: #0000000D;
+	--color-pill-text: #000000CC;
+	--color-pill-border: 1px solid #00000033;
+
+	--shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.08);
+	--shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] {
+	--color-bg: #0e0e0f;
+	--color-surface: #1a1a1c;
+	--color-border: #2c2c2f;
+
+	--color-text-primary: #f5f5f5;
+	--color-text-secondary: #c5c5c7;
+	--color-text-muted: #8e8e90;
+
+	--color-accent: #f4a261;
+	--color-accent-muted: #3b2c1f;
+
+	--color-status-busy: #f2845c;
+	--color-status-available: #2ec4b6;
+
+	--color-pill-bg: #2a2a2d;
+	--color-pill-text: #e5e5e5;
+
+	--shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.4);
+	--shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+body {
+	font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+	background-color: var(--color-bg);
+	color: var(--color-text-primary);
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
