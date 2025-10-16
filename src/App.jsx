@@ -246,7 +246,14 @@ function App() {
 						</div>
 					</div>
 				</div>
-				<div className="flex items-center gap-8">
+
+				<div
+					className={`flex items-center gap-8 sm:gap-6 transition-all duration-700 delay-100 ${
+						isLoaded
+							? 'opacity-100 translate-y-0'
+							: 'opacity-0 translate-y-8'
+					}`}
+				>
 					<a
 						href="https://github.com/OpsEclipse"
 						target="_blank"
@@ -288,7 +295,10 @@ function App() {
 							<circle cx="4" cy="4" r="2" />
 						</svg>
 					</a>
-					<a href="mailto:ss6shah@uwaterloo.ca" target='_blank'>
+					<a
+						href="mailto:ss6shah@uwaterloo.ca"
+						target="_blank"
+					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="20"
