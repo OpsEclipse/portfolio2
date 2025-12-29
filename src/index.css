@@ -54,3 +54,64 @@ body {
 	color: var(--color-text-primary);
 	transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+@keyframes confettiExplode {
+	0% {
+		transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1);
+		opacity: 1;
+	}
+	50% {
+		opacity: 1;
+	}
+	100% {
+		transform: translate(
+			calc(var(--velocity-x) - 50%), 
+			calc(var(--velocity-y) - 50% + 180px)
+		) rotate(calc(var(--rotation) + var(--rotation-speed))) scale(0.5);
+		opacity: 0;
+	}
+}
+
+.shape-triangle {
+	clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.shape-square {
+	/* Square is default */
+}
+
+.shape-pentagon {
+	clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+}
+
+.shape-hexagon {
+	clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}
+
+@keyframes fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes scale-in {
+	from {
+		transform: scale(0.9);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+.animate-fade-in {
+	animation: fade-in 0.2s ease-out;
+}
+
+.animate-scale-in {
+	animation: scale-in 0.3s ease-out;
+}
