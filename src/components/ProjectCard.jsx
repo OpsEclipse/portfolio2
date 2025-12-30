@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { usePortfolio } from '../context/PortfolioContext';
 
 const ProjectCard = ({
 	title,
@@ -10,9 +11,9 @@ const ProjectCard = ({
 	isHovered, // controlled by parent so one opens at a time
 	onHover,
 	onLeave,
-	onImageClick,
 	imageClassName = "w-64 h-40"
 }) => {
+	const { imagePopup: onImageClick } = usePortfolio();
 	const sliderRef = useRef(null);
 	const [canScrollLeft, setCanScrollLeft] = useState(false);
 	const [canScrollRight, setCanScrollRight] = useState(true);

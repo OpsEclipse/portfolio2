@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
 import Header from './components/Header';
 import About from './components/About';
 import SocialLinks from './components/SocialLinks';
 import ProjectCard from './components/ProjectCard';
 import Loader from './components/Loader';
 import ImageModal from './components/ImageModal';
+import { PortfolioProvider, usePortfolio } from './context/PortfolioContext';
 
 
 const imagesVaultify = [
@@ -80,50 +80,16 @@ const allImages = [
 	...imagesChat,
 ];
 
-function App() {
-	const [theme, setTheme] = useState(() => {
-		const stored = localStorage.getItem('theme');
-		return stored ? stored : 'light';
-	});
-	const [selectedImage, setSelectedImage] = useState(null);
-	const [hoveredProject, setHoveredProject] = useState(null);
-	const [isLoaded, setIsLoaded] = useState(false);
-	const [showLoader, setShowLoader] = useState(true);
-
-	useEffect(() => {
-		document.documentElement.setAttribute('data-theme', theme);
-	}, [theme]);
-
-	useEffect(() => {
-		// Show loader for 1.4 seconds
-		const loaderTimer = setTimeout(() => {
-			setShowLoader(false);
-			// Trigger animation after loader disappears
-			setTimeout(() => setIsLoaded(true), 100);
-		}, 1400);
-
-		return () => clearTimeout(loaderTimer);
-	}, []);
-
-	useEffect(() => {
-		localStorage.setItem('theme', theme);
-	}, [theme]);
-
-	const changeTheme = () => {
-		setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-	};
-
-	const imagePopup = (src) => {
-		setSelectedImage(src);
-	};
-
-	const closePopup = () => {
-		setSelectedImage(null);
-	};
+const PortfolioContent = () => {
+	const { 
+		isLoaded, 
+		hoveredProject, 
+		setHoveredProject 
+	} = usePortfolio();
 
 	return (
 		<>
-			<Loader show={showLoader} />
+			<Loader />
 			
 			<div className="flex row w-fit mx-auto min-h-screen p-6 sm:p-8 md:p-12 gap-4 md:gap-8">
 				<div
@@ -133,8 +99,8 @@ function App() {
 							: 'opacity-0 translate-y-8'
 					}`}
 				>
-					<Header isLoaded={isLoaded} toggleTheme={changeTheme} />
-					<About isLoaded={isLoaded} />
+					<Header />
+					<About />
 
 					<div
 						className={`flex flex-col gap-4 transition-all duration-700 delay-300 ${
@@ -154,7 +120,6 @@ function App() {
 								isHovered={hoveredProject === project.id}
 								onHover={() => setHoveredProject(project.id)}
 								onLeave={() => setHoveredProject(null)}
-								onImageClick={imagePopup}
 								imageClassName={
 									project.imageClassName || 'w-64 h-40'
 								}
@@ -163,8 +128,8 @@ function App() {
 					</div>
 				</div>
 
-				<ImageModal image={selectedImage} onClose={closePopup} />
-				<SocialLinks isLoaded={isLoaded} />
+				<ImageModal />
+				<SocialLinks />
 				
 				{/* Hidden Image Preloader */}
 				<div style={{ display: 'none' }}>
@@ -174,6 +139,14 @@ function App() {
 				</div>
 			</div>
 		</>
+	);
+};
+
+function App() {
+	return (
+		<PortfolioProvider>
+			<PortfolioContent />
+		</PortfolioProvider>
 	);
 }
 

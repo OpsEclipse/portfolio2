@@ -1,6 +1,9 @@
 import { X } from 'lucide-react';
 
-const ImageModal = ({ image, onClose }) => {
+import { usePortfolio } from '../context/PortfolioContext';
+
+const ImageModal = () => {
+	const { selectedImage: image, closePopup: onClose } = usePortfolio();
 	if (!image) return null;
 	return (
 		<div

@@ -1,6 +1,8 @@
 import { ArrowUpRight } from 'lucide-react';
+import { usePortfolio } from '../context/PortfolioContext';
 
-const SocialLinks = ({ isLoaded }) => {
+const SocialLinks = () => {
+	const { isLoaded } = usePortfolio();
 	const linkClass = "flex gap-1 items-center text-text-muted hover:text-text-primary transition-all duration-300 cursor-pointer group pb-2";
 	const textClass = "group-hover:translate-x-1 transition-transform duration-300";
 	const iconClass = "group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform duration-300";

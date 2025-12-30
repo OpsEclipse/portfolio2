@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { usePortfolio } from '../context/PortfolioContext';
 
-const About = ({ isLoaded }) => {
+const About = () => {
+	const { isLoaded } = usePortfolio();
 	const [confetti, setConfetti] = useState([]);
 
 	const confettiMake = () => {

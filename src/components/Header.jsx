@@ -1,5 +1,8 @@
 
-const Header = ({ isLoaded, toggleTheme }) => {
+import { usePortfolio } from '../context/PortfolioContext';
+
+const Header = () => {
+	const { isLoaded, changeTheme: toggleTheme } = usePortfolio();
 	return (
 		<div
 			className={`flex flex-col gap-4 sm:gap-6 transition-all duration-700 delay-100 ${
