@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+	ArrowUpRight,
+	ChevronLeft,
+	ChevronRight,
+} from 'lucide-react';
 import { usePortfolio } from '../context/PortfolioContext';
 
 const ProjectCard = ({
@@ -8,10 +12,11 @@ const ProjectCard = ({
 	tags,
 	items, // images array
 	repoLink,
+	demoLink,
 	isHovered, // controlled by parent so one opens at a time
 	onHover,
 	onLeave,
-	imageClassName = "w-64 h-40"
+	imageClassName = 'w-64 h-40',
 }) => {
 	const { imagePopup: onImageClick } = usePortfolio();
 	const sliderRef = useRef(null);
@@ -20,9 +25,12 @@ const ProjectCard = ({
 
 	const checkScrollButtons = () => {
 		if (sliderRef.current) {
-			const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
+			const { scrollLeft, scrollWidth, clientWidth } =
+				sliderRef.current;
 			setCanScrollLeft(scrollLeft > 0);
-			setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+			setCanScrollRight(
+				scrollLeft < scrollWidth - clientWidth - 1
+			);
 		}
 	};
 
@@ -34,7 +42,10 @@ const ProjectCard = ({
 		}
 		return () => {
 			if (slider) {
-				slider.removeEventListener('scroll', checkScrollButtons);
+				slider.removeEventListener(
+					'scroll',
+					checkScrollButtons
+				);
 			}
 		};
 	}, [isHovered, items]);
@@ -43,9 +54,15 @@ const ProjectCard = ({
 		const container = sliderRef.current;
 		const scrollAmount = 200;
 		if (direction === 'left') {
-			container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+			container.scrollBy({
+				left: -scrollAmount,
+				behavior: 'smooth',
+			});
 		} else {
-			container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+			container.scrollBy({
+				left: scrollAmount,
+				behavior: 'smooth',
+			});
 		}
 	};
 
@@ -55,16 +72,33 @@ const ProjectCard = ({
 			onMouseEnter={onHover}
 			onMouseLeave={onLeave}
 		>
-			<div className="flex gap-1 items-center cursor-pointer">
-				<a href={repoLink} target="_blank" rel="noopener noreferrer">
-					<h2 className="text-[11px] sm:text-[12px]">
-						{title}
-					</h2>
-				</a>
-				<ArrowUpRight
-					size={12}
-					className="sm:w-[14px] sm:h-[14px]"
-				/>
+			<div className="flex justify-between items-center w-full">
+				<div className="flex gap-1 items-center cursor-pointer hover:underline underline-offset-2 decoration-border transition-all">
+					<a
+						href={repoLink}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="flex items-center gap-1 text-text-primary"
+					>
+						<h2 className="text-[11px] sm:text-[12px] font-medium">
+							{title}
+						</h2>
+						<ArrowUpRight
+							size={12}
+							className="sm:w-[14px] sm:h-[14px] text-text-muted"
+						/>
+					</a>
+				</div>
+				{demoLink && (
+					<a
+						href={demoLink}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full border border-border/50 bg-pill-bg hover:bg-pill-bg/80 text-text-secondary transition-colors"
+					>
+						Demo Video
+					</a>
+				)}
 			</div>
 
 			<div
@@ -81,7 +115,10 @@ const ProjectCard = ({
 					</p>
 					<div className="flex gap-1 flex-wrap">
 						{tags.map((tag, index) => (
-							<div key={index} className="w-fit h-fit flex gap-2 rounded-full border px-2 py-1.5">
+							<div
+								key={index}
+								className="w-fit h-fit flex gap-2 rounded-full border px-2 py-1.5"
+							>
 								<p className="text-[9px] sm:text-[10px] font-medium leading-none text-text-muted">
 									{tag}
 								</p>
@@ -118,13 +155,17 @@ const ProjectCard = ({
 								<div
 									key={index}
 									className="flex-shrink-0 cursor-pointer group/image"
-									onClick={() => onImageClick(image)}
+									onClick={() =>
+										onImageClick(image)
+									}
 								>
 									<div className="relative overflow-hidden rounded-lg border border-border shadow-sm hover:shadow-md transition-all duration-300">
 										<img
 											src={image}
-											alt={`${title} screenshot ${index + 1}`}
-											className={`object-cover group-hover/image:scale-110 transition-transform duration-500 ${imageClassName}`} 
+											alt={`${title} screenshot ${
+												index + 1
+											}`}
+											className={`object-cover group-hover/image:scale-110 transition-transform duration-500 ${imageClassName}`}
 											loading="lazy"
 										/>
 										<div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/5 transition-colors duration-300"></div>

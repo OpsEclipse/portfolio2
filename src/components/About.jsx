@@ -1,47 +1,30 @@
-import { useState } from 'react';
+import { useRef } from 'react';
+import confetti from 'canvas-confetti';
 import { usePortfolio } from '../context/PortfolioContext';
 
 const About = () => {
 	const { isLoaded } = usePortfolio();
-	const [confetti, setConfetti] = useState([]);
+	const spanRef = useRef(null);
 
-	const confettiMake = () => {
-		const newConfetti = [];
-		const colors = [
-			'#ff0000',
-			'#00ff00',
-			'#0000ff',
-			'#ffff00',
-			'#ff00ff',
-			'#00ffff',
-			'#ffa500',
-			'#ff69b4',
-		];
-		const shapes = ['triangle', 'square', 'pentagon', 'hexagon'];
+	const triggerConfetti = (e) => {
+		const rect = e.target.closest('span').getBoundingClientRect();
+		const x = 0.5;
+		const y = -0.1;
 
-		for (let i = 0; i < 50; i++) {
-			const angle =
-				(Math.PI * 2 * i) / 50 + (Math.random() - 0.5) * 0.5;
-			const velocity = 80 + Math.random() * 60;
-
-			newConfetti.push({
-				id: Date.now() + i,
-				color: colors[
-					Math.floor(Math.random() * colors.length)
-				],
-				shape: shapes[
-					Math.floor(Math.random() * shapes.length)
-				],
-				velocityX: Math.cos(angle) * velocity,
-				velocityY: Math.sin(angle) * velocity,
-				rotation: Math.random() * 360,
-				rotationSpeed: (Math.random() - 0.5) * 1080,
-				size: 6 + Math.random() * 6,
-			});
-		}
-
-		setConfetti(newConfetti);
-		setTimeout(() => setConfetti([]), 2500);
+		confetti({
+			particleCount: 500,
+			spread: 1000,
+			origin: { x, y },
+			colors: [
+				'#ff0000',
+				'#00ff00',
+				'#0000ff',
+				'#ffff00',
+				'#ff00ff',
+				'#00ffff',
+			],
+			disableForReducedMotion: true,
+		});
 	};
 
 	return (
@@ -54,47 +37,24 @@ const About = () => {
 		>
 			<div className="flex flex-col gap-2">
 				<p className="text-[14px] sm:text-[16px] font-medium leading-none text-text-secondary">
-					First-year student at the university
-					of Waterloo{' '}
+					First-year student at the university of Waterloo{' '}
 				</p>
 				<p className="text-[14px] sm:text-[16px] font-medium leading-none text-text-muted">
 					Studying Systems Design Engineering
 				</p>
 			</div>
 			<p className="text-[11px] sm:text-[12px] font-normal text-text-muted leading-normal">
-				Student @ Waterloo by trade, Full Stack
-				Dev by passion. I love to build{' '}
+				Student @ Waterloo by trade, Full Stack Dev by
+				passion. I love to build{' '}
 				<span
-					className="relative inline-block underline hover:cursor-pointer transition-all duration-300 decoration-wavy"
-					onMouseEnter={confettiMake}
+					ref={spanRef}
+					className="relative inline-flex items-center gap-1 cursor-pointer group/confetti transition-all duration-300"
+					onMouseEnter={triggerConfetti}
+					onClick={triggerConfetti}
 				>
-					<span>cool stuff</span>
-					{confetti.map((c) => (
-						<span
-							key={c.id}
-							className="absolute pointer-events-none"
-							style={{
-								left: '50%',
-								top: '50%',
-								animation:
-									'confettiExplode 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
-								'--velocity-x': `${c.velocityX}px`,
-								'--velocity-y': `${c.velocityY}px`,
-								'--rotation': `${c.rotation}deg`,
-								'--rotation-speed': `${c.rotationSpeed}deg`,
-							}}
-						>
-							<span
-								className={`inline-block shape-${c.shape}`}
-								style={{
-									width: `${c.size}px`,
-									height: `${c.size}px`,
-									backgroundColor:
-										c.color,
-								}}
-							/>
-						</span>
-					))}
+					<span className=" underline decoration-wavy decoration-accent/50 group-hover/confetti:decoration-accent transition-all hover:text-accent">
+						cool stuff
+					</span>
 				</span>{' '}
 				with technology. Feel free to{' '}
 				<a

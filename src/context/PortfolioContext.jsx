@@ -27,6 +27,9 @@ export const PortfolioProvider = ({ children }) => {
 	// Image Modal State
 	const [selectedImage, setSelectedImage] = useState(null);
 
+    // Selector State
+    const [selector, setSelector] = useState('projects');
+
 	// Theme Effect
 	useEffect(() => {
 		document.documentElement.setAttribute('data-theme', theme);
@@ -56,6 +59,10 @@ export const PortfolioProvider = ({ children }) => {
 		setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
 	};
 
+    const changeSelector = (selector) => {
+        setSelector(selector);
+    };
+
 	const imagePopup = (src) => {
 		setSelectedImage(src);
 	};
@@ -74,6 +81,8 @@ export const PortfolioProvider = ({ children }) => {
 		selectedImage,
 		imagePopup,
 		closePopup,
+        selector,
+        changeSelector,
 	};
 
 	return (
