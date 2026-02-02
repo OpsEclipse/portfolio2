@@ -1,0 +1,7 @@
+{
+  "sandbox": {
+    "network": "limited",
+    "allowedDomains": ["registry.npmjs.org", "github.com"],
+    "allowedMethods": ["GET", "HEAD"]
+  }
+}

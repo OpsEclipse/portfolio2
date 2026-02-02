@@ -102,6 +102,24 @@ body {
 	animation: slide-in-right 0.3s ease-out;
 }
 
+.loader-wave span {
+	display: inline-block;
+	opacity: 0.35;
+	animation: loader-wave 1.2s ease-in-out infinite;
+}
+
+@keyframes loader-wave {
+	0%,
+	100% {
+		opacity: 0.35;
+		transform: translateY(0);
+	}
+	50% {
+		opacity: 1;
+		transform: translateY(-2px);
+	}
+}
+
 .writing-vertical {
 	writing-mode: vertical-rl;
 	text-orientation: mixed;

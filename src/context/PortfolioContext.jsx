@@ -18,7 +18,7 @@ export function PortfolioProvider({ children }) {
 	);
 
 	const [isLoaded, setIsLoaded] = useState(false);
-	const [showLoader, setShowLoader] = useState(true);
+	const [showLoader] = useState(false);
 	const [hoveredProject, setHoveredProject] = useState(null);
 	const [selectedImage, setSelectedImage] = useState(null);
 
@@ -28,12 +28,10 @@ export function PortfolioProvider({ children }) {
 	}, [theme]);
 
 	useEffect(() => {
-		const loaderTimer = setTimeout(() => {
-			setShowLoader(false);
-			setTimeout(() => setIsLoaded(true), 100);
-		}, 1400);
-
-		return () => clearTimeout(loaderTimer);
+		const raf = requestAnimationFrame(() => {
+			setIsLoaded(true);
+		});
+		return () => cancelAnimationFrame(raf);
 	}, []);
 
 	const changeTheme = useCallback(() => {
