@@ -21,7 +21,6 @@ export function PortfolioProvider({ children }) {
 	const [showLoader, setShowLoader] = useState(true);
 	const [hoveredProject, setHoveredProject] = useState(null);
 	const [selectedImage, setSelectedImage] = useState(null);
-	const [selector, setSelector] = useState('projects');
 
 	useEffect(() => {
 		document.documentElement.setAttribute('data-theme', theme);
@@ -41,9 +40,6 @@ export function PortfolioProvider({ children }) {
 		setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
 	}, []);
 
-	const changeSelector = useCallback((value) => {
-		setSelector(value);
-	}, []);
 
 	const imagePopup = useCallback((src) => {
 		setSelectedImage(src);
@@ -63,8 +59,6 @@ export function PortfolioProvider({ children }) {
 		selectedImage,
 		imagePopup,
 		closePopup,
-		selector,
-		changeSelector,
 	}), [
 		theme,
 		changeTheme,
@@ -74,8 +68,6 @@ export function PortfolioProvider({ children }) {
 		selectedImage,
 		imagePopup,
 		closePopup,
-		selector,
-		changeSelector,
 	]);
 
 	return (

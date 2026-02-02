@@ -6,9 +6,6 @@ import SocialLinks from '@/components/SocialLinks';
 import ProjectCard from '@/components/ProjectCard';
 import Loader from '@/components/Loader';
 import ImageModal from '@/components/ImageModal';
-import Selector from '@/components/Selector';
-import Experience from '@/components/Experience';
-import Education from '@/components/Education';
 import ChatWindow from '@/components/ChatWindow';
 import {
 	PortfolioProvider,
@@ -94,7 +91,7 @@ const allImages = [
 ];
 
 function PortfolioContent() {
-	const { isLoaded, hoveredProject, setHoveredProject, selector } =
+	const { isLoaded, hoveredProject, setHoveredProject } =
 		usePortfolio();
 
 	return (
@@ -111,7 +108,6 @@ function PortfolioContent() {
 				>
 					<Header />
 					<About />
-					<Selector />
 					<div
 						className={`flex flex-col gap-4 transition-all duration-700 delay-300 ${
 							isLoaded
@@ -119,37 +115,25 @@ function PortfolioContent() {
 								: 'opacity-0 translate-y-8'
 						}`}
 					>
-						{selector === 'projects' &&
-							projects.map((project) => (
-								<ProjectCard
-									key={project.id}
-									title={project.title}
-									description={project.description}
-									tags={project.tags}
-									items={project.images}
-									repoLink={project.repoLink}
-									demoLink={project.demoLink}
-									isHovered={
-										hoveredProject === project.id
-									}
-									onHover={() =>
-										setHoveredProject(project.id)
-									}
-									onLeave={() =>
-										setHoveredProject(null)
-									}
-									imageClassName={
-										project.imageClassName ||
-										'w-64 h-40'
-									}
-								/>
-							))}
-						{selector === 'experience' && (
-							<>
-								<Experience />
-								<Education />
-							</>
-						)}
+						{projects.map((project) => (
+							<ProjectCard
+								key={project.id}
+								title={project.title}
+								description={project.description}
+								tags={project.tags}
+								items={project.images}
+								repoLink={project.repoLink}
+								demoLink={project.demoLink}
+								isHovered={hoveredProject === project.id}
+								onHover={() =>
+									setHoveredProject(project.id)
+								}
+								onLeave={() => setHoveredProject(null)}
+								imageClassName={
+									project.imageClassName || 'w-64 h-40'
+								}
+							/>
+						))}
 					</div>
 				</div>
 
