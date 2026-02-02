@@ -22,8 +22,8 @@ export const MODELS = {
 };
 
 export const CONFIG = {
-	TOP_K: 10,
-	TOP_N: 3,
-	MIN_RERANK_SCORE: 0.45,
+	TOP_K: 12,
+	TOP_N: 5,
+	MIN_RERANK_SCORE: 0.3,
 	EMBEDDING_DIMENSIONS: 1536,
 };
