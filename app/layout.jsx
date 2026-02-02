@@ -1,6 +1,6 @@
 import { Inter } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/next';
 import StyledComponentsRegistry from '@/lib/registry';
+import VercelAnalytics from '@/components/VercelAnalytics';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -20,7 +20,7 @@ export default function RootLayout({ children }) {
 				<StyledComponentsRegistry>
 					{children}
 				</StyledComponentsRegistry>
-				<Analytics />
+				<VercelAnalytics />
 			</body>
 		</html>
 	);
