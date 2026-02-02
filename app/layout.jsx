@@ -1,4 +1,5 @@
 import { Inter } from 'next/font/google';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import StyledComponentsRegistry from '@/lib/registry';
 import './globals.css';
 
@@ -19,6 +20,7 @@ export default function RootLayout({ children }) {
 				<StyledComponentsRegistry>
 					{children}
 				</StyledComponentsRegistry>
+				<SpeedInsights />
 			</body>
 		</html>
 	);
