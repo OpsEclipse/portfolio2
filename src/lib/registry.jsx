@@ -24,21 +24,12 @@ export default function StyledComponentsRegistry({ children }) {
 		return <>{styles}</>;
 	});
 
-	if (typeof window !== 'undefined') {
-		return (
-			<StyleSheetManager shouldForwardProp={shouldForwardProp}>
-				<ThemeProvider theme={theme}>
-					<GlobalStyles />
-					{children}
-				</ThemeProvider>
-			</StyleSheetManager>
-		);
-	}
+	const isServer = typeof window === 'undefined';
 
 	return (
 		<StyleSheetManager
 			shouldForwardProp={shouldForwardProp}
-			sheet={styledComponentsStyleSheet.instance}
+			sheet={isServer ? styledComponentsStyleSheet.instance : undefined}
 		>
 			<ThemeProvider theme={theme}>
 				<GlobalStyles />
