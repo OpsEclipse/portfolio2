@@ -9,6 +9,9 @@ import { classifyIntent } from '@/lib/rag/gatekeeper';
 import { filterByRelevance, rerankDocuments } from '@/lib/rag/reranker';
 import { retrieveFromMultipleNamespaces } from '@/lib/rag/retrieval';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 20;
 const rateLimitStore = new Map();
@@ -145,7 +148,7 @@ export async function POST(request) {
 			async start(controller) {
 				try {
 					for await (const chunk of streamWithFallback(systemPrompt, messagesForModel, mode)) {
-						const content = chunk.choices[0]?.delta?.content;
+						const content = chunk?.choices?.[0]?.delta?.content;
 						if (content) {
 							const sseData = `data: ${JSON.stringify({ content })}\n\n`;
 							controller.enqueue(encoder.encode(sseData));
@@ -164,8 +167,9 @@ export async function POST(request) {
 					controller.enqueue(encoder.encode('data: [DONE]\n\n'));
 					controller.close();
 				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error);
 					console.error('Stream error:', error);
-					const errorData = `data: ${JSON.stringify({ error: 'Stream error occurred' })}\n\n`;
+					const errorData = `data: ${JSON.stringify({ error: 'Stream error occurred', detail: message })}\n\n`;
 					controller.enqueue(encoder.encode(errorData));
 					controller.close();
 				}
