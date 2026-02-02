@@ -8,7 +8,7 @@ const GATEKEEPER_PROMPT = `You are an intent classifier for a personal portfolio
 
 Namespaces:
 - "personal_life": Questions about hobbies, interests, personal background, life outside work
-- "professional_life": Questions about work experience, projects, skills, education, career
+- "professional_life": Questions about work experience, projects, skills, education, career, contact information
 - "about_rag": Questions about how this RAG system works, the technology behind it
 
 Rules:
@@ -38,9 +38,6 @@ User: "What's the weather like?"
 {"namespaces": [], "refinedQuery": ""}
 
 User: "Hello!"
-{"namespaces": [], "refinedQuery": ""}
-
-User: "What is machine learning?"
 {"namespaces": [], "refinedQuery": ""}`;
 
 const DEFAULT_GATEKEEPER_RESULT = {

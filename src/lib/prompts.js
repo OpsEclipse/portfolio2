@@ -1,4 +1,3 @@
-import { CONFIG } from './rag/constants';
 import { extractDocText } from './rag/extractText';
 
 /**
@@ -22,6 +21,12 @@ const BASE_CONSTRAINTS = `
 * Use the Knowledge Categories above to guide your answers.
 * If a query falls outside these three categories, politely redirect the user.
 * **No Context?** If the search results ({context}) are empty, rely on your core knowledge of Sparsh at FriedmannAI/UWaterloo.
+* After your answer, append a hidden block exactly like:
+<<USED_SOURCES>>
+chunk_id_1
+chunk_id_2
+<</USED_SOURCES>>
+Do not add markdown headings or extra text around it. Only include chunk IDs you actually used from the context. If none, write "none".
 `;
 
 const PROFESSIONAL_PROMPT = `
@@ -58,14 +63,17 @@ export function getSystemPrompt(mode, contextDocs) {
 		? contextDocs
 				.map((doc) => {
 					const text = extractDocText(doc).trim();
-					const heading =
-						doc.metadata?.heading ||
-						'General Information';
+					const heading = doc.metadata?.heading || 'General Information';
+					const chunkId =
+						doc.metadata?.chunk_id ??
+						doc.metadata?.chunkId ??
+						doc.id ??
+						'unknown';
 					// Tagging the doc with its metadata category if it exists
 					const category = doc.metadata?.category
 						? `[Category: ${doc.metadata.category}] `
 						: '';
-					return `#### ${category}${heading}\n${text}`;
+					return `#### ${category}${heading} (Chunk ID: ${chunkId})\n${text}`;
 				})
 				.join('\n\n---\n\n')
 		: fallbackContext;
@@ -77,11 +85,7 @@ export function getSystemPrompt(mode, contextDocs) {
 }
 
 export function formatSources(documents) {
-	const usedDocs =
-		documents?.filter(
-			(doc) =>
-				doc.rerankScore >= (CONFIG.MIN_RERANK_SCORE || 0.5)
-		) || [];
+	const usedDocs = documents || [];
 
 	if (usedDocs.length === 0) return '';
 

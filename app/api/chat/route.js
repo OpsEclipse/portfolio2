@@ -15,6 +15,42 @@ export const dynamic = 'force-dynamic';
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 20;
 const rateLimitStore = new Map();
+const USED_SOURCES_MARKER = '\n\n<<USED_SOURCES>>\n';
+const USED_SOURCES_MARKER_ALT = '\n<<USED_SOURCES>>\n';
+const USED_SOURCES_HEADER = '\n#### USED_SOURCES\n';
+const USED_SOURCES_MARKER_END = '\n<</USED_SOURCES>>';
+const USED_SOURCES_MARKER_MAX_LEN = Math.max(
+	USED_SOURCES_MARKER.length,
+	USED_SOURCES_MARKER_ALT.length,
+	USED_SOURCES_HEADER.length
+);
+
+function getDocChunkId(doc) {
+	return (
+		doc?.metadata?.chunk_id ??
+		doc?.metadata?.chunkId ??
+		doc?.id ??
+		''
+	);
+}
+
+function parseUsedSources(text) {
+	if (!text) return [];
+	const cleaned = text
+		.replace(/^#+\s*USED_SOURCES\s*/i, '')
+		.trim();
+	if (!cleaned || cleaned.toLowerCase() === 'none') return [];
+	return cleaned
+		.split(/[\n,]+/)
+		.map((entry) => entry.trim())
+		.filter(Boolean);
+}
+
+function filterDocsByUsedSources(docs, usedIds) {
+	if (!usedIds || usedIds.length === 0) return [];
+	const usedSet = new Set(usedIds);
+	return docs.filter((doc) => usedSet.has(String(getDocChunkId(doc))));
+}
 
 function getClientId(request) {
 	const forwarded = request.headers.get('x-forwarded-for');
@@ -147,20 +183,89 @@ export async function POST(request) {
 		const readableStream = new ReadableStream({
 			async start(controller) {
 				try {
+					let pending = '';
+					let capturingUsedSources = false;
+					let usedSourcesText = '';
+
+					const enqueueContent = (text) => {
+						if (!text) return;
+						const sseData = `data: ${JSON.stringify({ content: text })}\n\n`;
+						controller.enqueue(encoder.encode(sseData));
+					};
+
+					const processPending = () => {
+						while (pending) {
+							if (capturingUsedSources) {
+								const endIdx = pending.indexOf(USED_SOURCES_MARKER_END);
+								if (endIdx === -1) {
+									usedSourcesText += pending;
+									pending = '';
+									return;
+								}
+								usedSourcesText += pending.slice(0, endIdx);
+								pending = pending.slice(endIdx + USED_SOURCES_MARKER_END.length);
+								capturingUsedSources = false;
+								continue;
+							}
+
+							const startIdxPrimary = pending.indexOf(USED_SOURCES_MARKER);
+							const startIdxAlt = pending.indexOf(USED_SOURCES_MARKER_ALT);
+							const startIdxHeader = pending.indexOf(USED_SOURCES_HEADER);
+							let startIdx = -1;
+							let markerLen = 0;
+							const candidates = [
+								{ idx: startIdxPrimary, len: USED_SOURCES_MARKER.length },
+								{ idx: startIdxAlt, len: USED_SOURCES_MARKER_ALT.length },
+								{ idx: startIdxHeader, len: USED_SOURCES_HEADER.length },
+							].filter((item) => item.idx !== -1);
+							if (candidates.length > 0) {
+								candidates.sort((a, b) => a.idx - b.idx);
+								startIdx = candidates[0].idx;
+								markerLen = candidates[0].len;
+							}
+
+							if (startIdx === -1) {
+								const safeLen = Math.max(
+									0,
+									pending.length - (USED_SOURCES_MARKER_MAX_LEN - 1)
+								);
+								if (safeLen === 0) return;
+								enqueueContent(pending.slice(0, safeLen));
+								pending = pending.slice(safeLen);
+								return;
+							}
+
+							if (startIdx > 0) {
+								enqueueContent(pending.slice(0, startIdx));
+							}
+							pending = pending.slice(startIdx + markerLen);
+							capturingUsedSources = true;
+						}
+					};
+
 					for await (const chunk of streamWithFallback(systemPrompt, messagesForModel, mode)) {
 						const content = chunk?.choices?.[0]?.delta?.content;
 						if (content) {
-							const sseData = `data: ${JSON.stringify({ content })}\n\n`;
-							controller.enqueue(encoder.encode(sseData));
+							pending += content;
+							processPending();
 						}
+					}
+
+					if (!capturingUsedSources && pending) {
+						enqueueContent(pending);
+						pending = '';
 					}
 
 					// After stream completes, append sources if we used RAG
 					if (hasRelevantContext) {
-						const suffix = formatSources(rerankedDocs);
+						const usedSourceIds = parseUsedSources(usedSourcesText);
+						const usedDocs = filterDocsByUsedSources(
+							rerankedDocs,
+							usedSourceIds
+						);
+						const suffix = formatSources(usedDocs);
 						if (suffix) {
-							const sseData = `data: ${JSON.stringify({ content: suffix })}\n\n`;
-							controller.enqueue(encoder.encode(sseData));
+							enqueueContent(suffix);
 						}
 					}
 
