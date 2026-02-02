@@ -4,7 +4,7 @@ import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right.js';
 import { usePortfolio } from '../context/PortfolioContext';
 
 function SocialLinks() {
-	const { isLoaded, openMusicPage } = usePortfolio();
+	const { isLoaded } = usePortfolio();
 	const linkClass =
 		'flex gap-1 items-center text-text-muted hover:text-text-primary transition-all duration-300 cursor-pointer group pb-2';
 	const textClass =
@@ -54,13 +54,6 @@ function SocialLinks() {
 				<p className={textClass}>Resume</p>
 				<ArrowUpRight size={16} className={iconClass} />
 			</a>
-			<button
-				onClick={openMusicPage}
-				className={linkClass}
-			>
-				<p className={textClass}>Music</p>
-				<ArrowUpRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
-			</button>
 		</div>
 	);
 }

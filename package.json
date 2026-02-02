@@ -10,8 +10,6 @@
 		"lint": "next lint"
 	},
 	"dependencies": {
-		"@supabase/postgrest-js": "^2.93.3",
-		"@supabase/supabase-js": "^2.90.1",
 		"canvas-confetti": "^1.9.4",
 		"iceberg-js": "^0.8.1",
 		"lucide-react": "^0.545.0",

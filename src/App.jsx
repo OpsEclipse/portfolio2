@@ -14,7 +14,6 @@ import {
 // Lazy load conditionally-rendered components for code splitting
 const Experience = lazy(() => import('./components/Experience'));
 const Education = lazy(() => import('./components/Education'));
-const MusicPage = lazy(() => import('./components/MusicPage'));
 const ChatWindow = lazy(() => import('./components/ChatWindow'));
 
 const imagesVaultify = [
@@ -149,9 +148,6 @@ function PortfolioContent() {
 				</div>
 
 				<ImageModal />
-				<Suspense fallback={null}>
-					<MusicPage />
-				</Suspense>
 				<Suspense fallback={null}>
 					<ChatWindow />
 				</Suspense>

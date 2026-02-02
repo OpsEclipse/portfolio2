@@ -9,7 +9,6 @@ import ImageModal from '@/components/ImageModal';
 import Selector from '@/components/Selector';
 import Experience from '@/components/Experience';
 import Education from '@/components/Education';
-import MusicPage from '@/components/MusicPage';
 import ChatWindow from '@/components/ChatWindow';
 import {
 	PortfolioProvider,
@@ -155,7 +154,6 @@ function PortfolioContent() {
 				</div>
 
 				<ImageModal />
-				<MusicPage />
 				<ChatWindow />
 				<SocialLinks />
 
