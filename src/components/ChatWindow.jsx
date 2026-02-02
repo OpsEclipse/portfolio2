@@ -290,7 +290,7 @@ function ChatWindow() {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					messages: newMessages.filter((m) => m.role !== 'assistant' || m !== INITIAL_MESSAGE),
+					messages: [userMessage],
 					mode,
 				}),
 			});
@@ -333,7 +333,8 @@ function ChatWindow() {
 								});
 							}
 							if (parsed.error) {
-								console.error('Stream error:', parsed.error);
+								const detail = parsed.detail ? ` (${parsed.detail})` : '';
+								console.error(`Stream error: ${parsed.error}${detail}`);
 							}
 						} catch {
 							// Ignore JSON parse errors for incomplete chunks
