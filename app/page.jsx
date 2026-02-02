@@ -1,21 +1,20 @@
-import { lazy, Suspense } from 'react';
-import Header from './components/Header';
-import About from './components/About';
-import SocialLinks from './components/SocialLinks';
-import ProjectCard from './components/ProjectCard';
-import Loader from './components/Loader';
-import ImageModal from './components/ImageModal';
-import Selector from './components/Selector';
+'use client';
+
+import Header from '@/components/Header';
+import About from '@/components/About';
+import SocialLinks from '@/components/SocialLinks';
+import ProjectCard from '@/components/ProjectCard';
+import Loader from '@/components/Loader';
+import ImageModal from '@/components/ImageModal';
+import Selector from '@/components/Selector';
+import Experience from '@/components/Experience';
+import Education from '@/components/Education';
+import MusicPage from '@/components/MusicPage';
+import ChatWindow from '@/components/ChatWindow';
 import {
 	PortfolioProvider,
 	usePortfolio,
-} from './context/PortfolioContext';
-
-// Lazy load conditionally-rendered components for code splitting
-const Experience = lazy(() => import('./components/Experience'));
-const Education = lazy(() => import('./components/Education'));
-const MusicPage = lazy(() => import('./components/MusicPage'));
-const ChatWindow = lazy(() => import('./components/ChatWindow'));
+} from '@/context/PortfolioContext';
 
 const imagesVaultify = [
 	'https://github.com/OpsEclipse/vaultify-frontend/raw/main/public/vaultify.png',
@@ -88,6 +87,13 @@ const projects = [
 	},
 ];
 
+const allImages = [
+	...imagesVaultify,
+	...imagesTodo,
+	...imagesStudyBud,
+	...imagesChat,
+];
+
 function PortfolioContent() {
 	const { isLoaded, hoveredProject, setHoveredProject, selector } =
 		usePortfolio();
@@ -140,34 +146,34 @@ function PortfolioContent() {
 								/>
 							))}
 						{selector === 'experience' && (
-							<Suspense fallback={<div className="animate-pulse h-48 bg-pill-bg/30 rounded-xl" />}>
+							<>
 								<Experience />
 								<Education />
-							</Suspense>
+							</>
 						)}
 					</div>
 				</div>
 
 				<ImageModal />
-				<Suspense fallback={null}>
-					<MusicPage />
-				</Suspense>
-				<Suspense fallback={null}>
-					<ChatWindow />
-				</Suspense>
+				<MusicPage />
+				<ChatWindow />
 				<SocialLinks />
 
+				{/* Preload images */}
+				<div style={{ display: 'none' }}>
+					{allImages.map((src, index) => (
+						<img key={index} src={src} alt="preload" />
+					))}
 				</div>
+			</div>
 		</>
 	);
-};
+}
 
-function App() {
+export default function Home() {
 	return (
 		<PortfolioProvider>
 			<PortfolioContent />
 		</PortfolioProvider>
 	);
 }
-
-export default App;

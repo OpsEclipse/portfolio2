@@ -1,4 +1,17 @@
-import { ArrowUpRight, Calendar } from 'lucide-react';
+import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right.js';
+import Calendar from 'lucide-react/dist/esm/icons/calendar.js';
+
+// Parse simple HTML with only <strong> tags to React elements
+function parseDescription(text) {
+	const parts = text.split(/(<strong>.*?<\/strong>)/g);
+	return parts.map((part, index) => {
+		const match = part.match(/<strong>(.*?)<\/strong>/);
+		if (match) {
+			return <strong key={index}>{match[1]}</strong>;
+		}
+		return part;
+	});
+}
 
 const ExperienceCard = ({
 	role,
@@ -60,8 +73,9 @@ const ExperienceCard = ({
 						<li
 							key={index}
 							className="text-[11px] sm:text-[12px] text-text-muted leading-relaxed"
-							dangerouslySetInnerHTML={{ __html: item }}
-						/>
+						>
+							{parseDescription(item)}
+						</li>
 					))}
 				</ul>
 			)}
@@ -105,7 +119,6 @@ const Experience = () => {
 			],
 			logoUrl:
 				'https://media.licdn.com/dms/image/v2/C4D0BAQFvORyCn1VLaA/company-logo_100_100/company-logo_100_100/0/1630520530065/uw_vex_u_logo?e=1768435200&v=beta&t=X18jBk_pOrkyaxoHTH7pa80hcNpfRULgcQttsFW11gs',
-			logoAlt: 'UWAT VEXU Robotics Design Team',
 		},
 		{
 			id: 'sanatan-mandir',
@@ -132,7 +145,7 @@ const Experience = () => {
 				'Created <strong>binary search PID tuning algorithm</strong>, reducing tuning time by <strong>50%</strong> and improving development efficiency.',
 			],
 			skills: ['C++', 'PID Control', 'Algorithms'],
-			logoUrl: '', // Placeholder
+			logoUrl: '',
 		},
 	];
 

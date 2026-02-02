@@ -1,4 +1,4 @@
-import { Calendar } from 'lucide-react';
+import Calendar from 'lucide-react/dist/esm/icons/calendar.js';
 
 const EducationCard = ({
 	school,

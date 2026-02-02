@@ -1,13 +1,12 @@
-import { useRef } from 'react';
+'use client';
+
 import confetti from 'canvas-confetti';
 import { usePortfolio } from '../context/PortfolioContext';
 
 const About = () => {
 	const { isLoaded } = usePortfolio();
-	const spanRef = useRef(null);
 
-	const triggerConfetti = (e) => {
-		const rect = e.target.closest('span').getBoundingClientRect();
+	const triggerConfetti = () => {
 		const x = 0.5;
 		const y = -0.1;
 
@@ -47,12 +46,11 @@ const About = () => {
 				Student @ Waterloo by trade, Full Stack Dev by
 				passion. I love to build{' '}
 				<span
-					ref={spanRef}
 					className="relative inline-flex items-center gap-1 cursor-pointer group/confetti transition-all duration-300"
 					onMouseEnter={triggerConfetti}
 					onClick={triggerConfetti}
 				>
-					<span className=" underline decoration-wavy decoration-accent/50 group-hover/confetti:decoration-accent transition-all hover:text-accent">
+					<span className="underline decoration-wavy decoration-accent/50 group-hover/confetti:decoration-accent transition-all hover:text-accent">
 						cool stuff
 					</span>
 				</span>{' '}

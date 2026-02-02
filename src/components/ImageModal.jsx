@@ -1,4 +1,6 @@
-import { X } from 'lucide-react';
+'use client';
+
+import X from 'lucide-react/dist/esm/icons/x.js';
 
 import { usePortfolio } from '../context/PortfolioContext';
 

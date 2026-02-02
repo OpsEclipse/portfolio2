@@ -1,19 +1,37 @@
+'use client';
+
 import { useState, useRef, useEffect } from 'react';
-import {
-	ArrowUpRight,
-	ChevronLeft,
-	ChevronRight,
-} from 'lucide-react';
+import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right.js';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left.js';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.js';
 import { usePortfolio } from '../context/PortfolioContext';
+
+const ScrollButton = ({ direction, onClick, visible, icon }) => {
+	if (!visible) return null;
+
+	const Icon = icon;
+	return (
+		<button
+			onClick={(e) => {
+				e.stopPropagation();
+				onClick();
+			}}
+			className={`absolute ${direction === 'left' ? 'left-0' : 'right-0'} top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+			aria-label={`Scroll ${direction}`}
+		>
+			<Icon size={16} />
+		</button>
+	);
+};
 
 const ProjectCard = ({
 	title,
 	description,
 	tags,
-	items, // images array
+	items,
 	repoLink,
 	demoLink,
-	isHovered, // controlled by parent so one opens at a time
+	isHovered,
 	onHover,
 	onLeave,
 	imageClassName = 'w-64 h-40',
@@ -126,23 +144,14 @@ const ProjectCard = ({
 						))}
 					</div>
 
-					{/* Horizontal Image Slider */}
 					<div className="relative w-full group">
-						{/* Left Button */}
-						{canScrollLeft && (
-							<button
-								onClick={(e) => {
-									e.stopPropagation();
-									scroll('left');
-								}}
-								className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-								aria-label="Scroll left"
-							>
-								<ChevronLeft size={16} />
-							</button>
-						)}
+						<ScrollButton
+							direction="left"
+							onClick={() => scroll('left')}
+							visible={canScrollLeft}
+							icon={ChevronLeft}
+						/>
 
-						{/* Scrollable Container */}
 						<div
 							ref={sliderRef}
 							className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth"
@@ -174,19 +183,12 @@ const ProjectCard = ({
 							))}
 						</div>
 
-						{/* Right Button */}
-						{canScrollRight && (
-							<button
-								onClick={(e) => {
-									e.stopPropagation();
-									scroll('right');
-								}}
-								className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-								aria-label="Scroll right"
-							>
-								<ChevronRight size={16} />
-							</button>
-						)}
+						<ScrollButton
+							direction="right"
+							onClick={() => scroll('right')}
+							visible={canScrollRight}
+							icon={ChevronRight}
+						/>
 					</div>
 				</div>
 			</div>

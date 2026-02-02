@@ -1,3 +1,5 @@
+'use client';
+
 import { usePortfolio } from '../context/PortfolioContext';
 
 const Selector = () => {

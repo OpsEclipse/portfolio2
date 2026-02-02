@@ -1,77 +1,137 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+'use client';
+
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+
+import { supabase } from '../lib/supabase';
 
 const PortfolioContext = createContext();
 
-export const usePortfolio = () => {
+const DUMMY_MUSIC_DATA = {
+	id: 'current_state',
+	top_tracks: [
+		{
+			id: '1',
+			name: 'Passion Fruit',
+			artist: 'Drake',
+			album: 'More Life',
+			image: 'https://upload.wikimedia.org/wikipedia/en/2/24/Drake_-_More_Life.png',
+			spotifyUrl: 'https://open.spotify.com/track/5mCPDVBb16L4XQwDdbRUpz',
+		},
+		{
+			id: '2',
+			name: 'Who Knows',
+			artist: 'Daniel Caesar',
+			album: 'NEVER ENOUGH',
+			image: 'https://upload.wikimedia.org/wikipedia/en/6/6e/Daniel_Caesar_-_Never_Enough.jpg',
+			spotifyUrl: 'https://open.spotify.com/track/4W4fNrZYkobj539TOWsLO2',
+		},
+		{
+			id: '3',
+			name: 'Toronto 2014',
+			artist: 'Daniel Caesar',
+			album: 'NEVER ENOUGH',
+			image: 'https://upload.wikimedia.org/wikipedia/en/9/9a/Daniel_Caesar_-_Freudian.png',
+			spotifyUrl: 'https://open.spotify.com/track/6r0EOlV0gSUhuhnxkPz45s',
+		},
+		{
+			id: '4',
+			name: 'Bake Shop',
+			artist: 'Kuala',
+			album: 'Bake Shop',
+			image: 'https://i.scdn.co/image/ab67616d0000b273f5b5e9a4b4b5e9a4b4b5e9a',
+			spotifyUrl: 'https://open.spotify.com/track/placeholder',
+		},
+	],
+	last_updated: new Date().toISOString(),
+};
+
+export function usePortfolio() {
 	const context = useContext(PortfolioContext);
 	if (!context) {
 		throw new Error('usePortfolio must be used within a PortfolioProvider');
 	}
 	return context;
-};
+}
 
-export const PortfolioProvider = ({ children }) => {
-	// Theme State
-	const [theme, setTheme] = useState(() => {
-		const stored = localStorage.getItem('theme');
-		return stored ? stored : 'light';
-	});
+export function PortfolioProvider({ children }) {
+	const [theme, setTheme] = useState(
+		() => (typeof window !== 'undefined' ? localStorage.getItem('theme') : 'light') || 'light'
+	);
 
-	// Loading State
 	const [isLoaded, setIsLoaded] = useState(false);
 	const [showLoader, setShowLoader] = useState(true);
-
-	// Project Hover State
 	const [hoveredProject, setHoveredProject] = useState(null);
-
-	// Image Modal State
 	const [selectedImage, setSelectedImage] = useState(null);
+	const [selector, setSelector] = useState('projects');
+	const [musicPageOpen, setMusicPageOpen] = useState(false);
+	const [musicData, setMusicData] = useState(null);
+	const [musicLoading, setMusicLoading] = useState(false);
 
-    // Selector State
-    const [selector, setSelector] = useState('projects');
-
-	// Theme Effect
 	useEffect(() => {
 		document.documentElement.setAttribute('data-theme', theme);
 		localStorage.setItem('theme', theme);
 	}, [theme]);
 
-	// Loader Effect
 	useEffect(() => {
-		// Show loader for 1.4 seconds (original logic preserved, though reduced for timing adjustment)
-		// Based on recent request, the transition is faster, but initial load might still want a moment.
-		// The user set transition to 200ms in Loader. Here we manage the mount/unmount logic.
 		const loaderTimer = setTimeout(() => {
 			setShowLoader(false);
-			// Trigger animation after loader disappears
 			setTimeout(() => setIsLoaded(true), 100);
-		}, 1400); // Keeping original 1400ms initial wait unless user requested that changed too. 
-        // NOTE: User asked for "animations done to trigger after 200ms" in Loader.jsx.
-        // That was the cleanup timer. The initial display time wasn't explicitly changed, 
-        // but shorter is usually better for "cooler". 
-        // However, I will keep the original 1400ms for now to be safe, 
-        // as the request was specifically about the *transition* timing in Loader.jsx.
+		}, 1400);
 
 		return () => clearTimeout(loaderTimer);
 	}, []);
 
-	const changeTheme = () => {
+	const changeTheme = useCallback(() => {
 		setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-	};
+	}, []);
 
-    const changeSelector = (selector) => {
-        setSelector(selector);
-    };
+	const changeSelector = useCallback((value) => {
+		setSelector(value);
+	}, []);
 
-	const imagePopup = (src) => {
+	const imagePopup = useCallback((src) => {
 		setSelectedImage(src);
-	};
+	}, []);
 
-	const closePopup = () => {
+	const closePopup = useCallback(() => {
 		setSelectedImage(null);
-	};
+	}, []);
 
-	const value = {
+	const fetchMusicData = useCallback(async () => {
+		setMusicLoading(true);
+		try {
+			const { data, error } = await supabase
+				.from('music_cache')
+				.select('*')
+				.eq('id', 'current_state')
+				.single();
+
+			if (error) throw error;
+			if (!data?.top_tracks?.length) {
+				setMusicData(DUMMY_MUSIC_DATA);
+			} else {
+				setMusicData(data);
+			}
+		} catch (err) {
+			console.error('Error fetching music data, using dummy data:', err);
+			setMusicData(DUMMY_MUSIC_DATA);
+		} finally {
+			setMusicLoading(false);
+		}
+	}, []);
+
+	const openMusicPage = useCallback(() => {
+		setMusicPageOpen(true);
+		if (!musicData) {
+			fetchMusicData();
+		}
+	}, [musicData, fetchMusicData]);
+
+	const closeMusicPage = useCallback(() => {
+		setMusicPageOpen(false);
+	}, []);
+
+	const value = useMemo(() => ({
 		theme,
 		changeTheme,
 		isLoaded,
@@ -81,13 +141,34 @@ export const PortfolioProvider = ({ children }) => {
 		selectedImage,
 		imagePopup,
 		closePopup,
-        selector,
-        changeSelector,
-	};
+		selector,
+		changeSelector,
+		musicPageOpen,
+		openMusicPage,
+		closeMusicPage,
+		musicData,
+		musicLoading,
+	}), [
+		theme,
+		changeTheme,
+		isLoaded,
+		showLoader,
+		hoveredProject,
+		selectedImage,
+		imagePopup,
+		closePopup,
+		selector,
+		changeSelector,
+		musicPageOpen,
+		openMusicPage,
+		closeMusicPage,
+		musicData,
+		musicLoading,
+	]);
 
 	return (
 		<PortfolioContext.Provider value={value}>
 			{children}
 		</PortfolioContext.Provider>
 	);
-};
+}
