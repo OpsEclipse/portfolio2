@@ -62,9 +62,9 @@ export const GlobalStyles = createGlobalStyle`
     font-weight: 100 !important;
   }
 
-  .app-window__content {
+  .app-window .app-window__content {
     height: calc(100% - 33px);
-    padding: 4px 1px;
+    padding: 4px 1px !important;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
