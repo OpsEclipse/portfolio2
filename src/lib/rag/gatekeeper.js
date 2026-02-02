@@ -14,6 +14,7 @@ Namespaces:
 Rules:
 - Return an EMPTY array [] for general knowledge questions, greetings, or things unrelated to Sparsh
 - Return ONE namespace if the query clearly fits one category
+- AMBIGUITY RULE: If a query is ambiguous or could relate to multiple facets of Sparsh's life, prioritize coverage by returning MULTIPLE namespaces.
 - Return MULTIPLE namespaces if the query spans categories (e.g., "tell me about Sparsh" → both personal and professional)
 
 Respond ONLY with valid JSON in this exact format:
@@ -28,11 +29,11 @@ User: "What are Sparsh's hobbies?"
 User: "Tell me about his work experience"
 {"namespaces": ["professional_life"], "refinedQuery": "Sparsh work experience employment history career jobs"}
 
-User: "Tell me everything about Sparsh"
-{"namespaces": ["personal_life", "professional_life"], "refinedQuery": "Sparsh background experience interests skills"}
+User: "What can you tell me about Sparsh?"
+{"namespaces": ["personal_life", "professional_life"], "refinedQuery": "Sparsh background experience interests skills personal and professional history"}
 
-User: "How does this chatbot work?"
-{"namespaces": ["about_rag"], "refinedQuery": "RAG system architecture how chatbot works technology implementation"}
+User: "How did he build this?"
+{"namespaces": ["professional_life", "about_rag"], "refinedQuery": "Sparsh technical projects portfolio development RAG system implementation architecture"}
 
 User: "What's the weather like?"
 {"namespaces": [], "refinedQuery": ""}
