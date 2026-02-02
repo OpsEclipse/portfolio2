@@ -1,4 +1,5 @@
 import { Inter } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import StyledComponentsRegistry from '@/lib/registry';
 import './globals.css';
 
@@ -19,6 +20,7 @@ export default function RootLayout({ children }) {
 				<StyledComponentsRegistry>
 					{children}
 				</StyledComponentsRegistry>
+				<Analytics />
 			</body>
 		</html>
 	);
