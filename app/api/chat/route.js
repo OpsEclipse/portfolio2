@@ -65,15 +65,19 @@ function isRateLimited(clientId) {
 	const entry = rateLimitStore.get(clientId);
 	if (!entry || now - entry.start > RATE_LIMIT_WINDOW_MS) {
 		rateLimitStore.set(clientId, { start: now, count: 1 });
-		return false;
+		return { limited: false, retryAfter: 0 };
 	}
 
 	entry.count += 1;
 	if (entry.count > RATE_LIMIT_MAX) {
-		return true;
+		const retryAfter = Math.max(
+			1,
+			Math.ceil((entry.start + RATE_LIMIT_WINDOW_MS - now) / 1000)
+		);
+		return { limited: true, retryAfter };
 	}
 
-	return false;
+	return { limited: false, retryAfter: 0 };
 }
 
 async function* streamWithFallback(systemPrompt, messages, mode) {
@@ -116,10 +120,16 @@ async function* streamWithFallback(systemPrompt, messages, mode) {
 export async function POST(request) {
 	try {
 		const clientId = getClientId(request);
-		if (isRateLimited(clientId)) {
+		const rateLimit = isRateLimited(clientId);
+		if (rateLimit.limited) {
 			return Response.json(
 				{ error: 'Rate limit exceeded. Please try again soon.' },
-				{ status: 429 }
+				{
+					status: 429,
+					headers: {
+						'Retry-After': String(rateLimit.retryAfter),
+					},
+				}
 			);
 		}
 

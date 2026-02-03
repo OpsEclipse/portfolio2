@@ -85,6 +85,8 @@ function ChatWindow() {
 	const [messages, setMessages] = useState([INITIAL_MESSAGE]);
 	const [input, setInput] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
+	const [rateLimitUntil, setRateLimitUntil] = useState(null);
+	const [rateLimitRemaining, setRateLimitRemaining] = useState(0);
 	const [showInitializing, setShowInitializing] = useState(true);
 	const { isLoaded } = usePortfolio();
 	const scrollRafRef = useRef(0);
@@ -121,6 +123,26 @@ function ChatWindow() {
 			if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!rateLimitUntil) {
+			setRateLimitRemaining(0);
+			return undefined;
+		}
+
+		const updateRemaining = () => {
+			const remainingMs = rateLimitUntil - Date.now();
+			const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+			setRateLimitRemaining(remainingSec);
+			if (remainingMs <= 0) {
+				setRateLimitUntil(null);
+			}
+		};
+
+		updateRemaining();
+		const interval = window.setInterval(updateRemaining, 1000);
+		return () => window.clearInterval(interval);
+	}, [rateLimitUntil]);
 
 	useEffect(() => {
 		sizeRef.current = size;
@@ -318,6 +340,16 @@ function ChatWindow() {
 
 	const handleSend = async () => {
 		if (!input.trim() || isLoading) return;
+		if (rateLimitUntil && Date.now() < rateLimitUntil) {
+			setMessages((prev) => [
+				...prev,
+				{
+					role: 'assistant',
+					content: `Rate limit exceeded. Please try again in ${rateLimitRemaining || 1}s.`,
+				},
+			]);
+			return;
+		}
 
 		const userMessage = { role: 'user', content: input.trim() };
 		const newMessages = [...messages, userMessage];
@@ -336,7 +368,34 @@ function ChatWindow() {
 			});
 
 			if (!response.ok) {
-				throw new Error('Failed to get response');
+				let errorMessage = 'Failed to get response';
+				try {
+					const errorData = await response.json();
+					if (errorData?.error) {
+						errorMessage = errorData.error;
+					}
+				} catch {
+					// Ignore JSON parse errors for error responses
+				}
+
+				if (response.status === 429) {
+					const retryAfterHeader = response.headers.get('retry-after');
+					const retryAfterSeconds = Math.max(
+						1,
+						Number.parseInt(retryAfterHeader, 10) || 30
+					);
+					setRateLimitUntil(Date.now() + retryAfterSeconds * 1000);
+					setMessages((prev) => [
+						...prev,
+						{
+							role: 'assistant',
+							content: `Rate limit exceeded. Please try again in ${retryAfterSeconds}s.`,
+						},
+					]);
+					return;
+				}
+
+				throw new Error(errorMessage);
 			}
 
 			// Add empty assistant message for streaming
@@ -388,7 +447,7 @@ function ChatWindow() {
 				...prev,
 				{
 					role: 'assistant',
-					content: 'Sorry, I encountered an error. Please try again.',
+					content: error?.message || 'Sorry, I encountered an error. Please try again.',
 				},
 			]);
 		} finally {
@@ -602,7 +661,7 @@ function ChatWindow() {
 							value={input}
 							onChange={(e) => setInput(e.target.value)}
 							onKeyDown={handleKeyDown}
-							disabled={isLoading}
+							disabled={isLoading || (rateLimitUntil && Date.now() < rateLimitUntil)}
 						/>
 					</div>
 					<div
@@ -643,8 +702,16 @@ function ChatWindow() {
 								gap: '4px',
 							}}
 						>
-							<Button primary onClick={handleSend} disabled={isLoading || !input.trim()}>
-								{isLoading ? 'Sending...' : 'Send'}
+							<Button
+								primary
+								onClick={handleSend}
+								disabled={isLoading || !input.trim() || (rateLimitUntil && Date.now() < rateLimitUntil)}
+							>
+								{isLoading
+									? 'Sending...'
+									: rateLimitUntil && Date.now() < rateLimitUntil
+										? `Wait ${rateLimitRemaining || 1}s`
+										: 'Send'}
 							</Button>
 							<Button onClick={handleClear} disabled={isLoading}>
 								Clear
