@@ -84,5 +84,18 @@ export async function rerankDocuments(query, documents) {
 }
 
 export function filterByRelevance(documents, minScore = CONFIG.MIN_RERANK_SCORE) {
-	return documents.filter((doc) => doc.rerankScore >= minScore);
+	if (!documents || documents.length === 0) return [];
+	const filtered = documents.filter((doc) => doc.rerankScore >= minScore);
+	if (filtered.length > 0) {
+		return filtered;
+	}
+	// Fail-open: keep top results when threshold filters everything out.
+	const fallbackCount = 3;
+	console.warn(
+		`No documents met rerank min score (${minScore}); using top ${fallbackCount} reranked results.`
+	);
+	return documents
+		.slice()
+		.sort((a, b) => (b.rerankScore ?? 0) - (a.rerankScore ?? 0))
+		.slice(0, fallbackCount);
 }

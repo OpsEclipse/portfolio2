@@ -2,6 +2,7 @@ import { getGroqClient } from '@/lib/groq';
 import { getOpenRouterClient } from '@/lib/openrouter';
 import {
 	formatSources,
+	getGreetingSystemPrompt,
 	getSystemPrompt,
 	normalizeChatMode,
 } from '@/lib/prompts';
@@ -18,15 +19,21 @@ const RATE_LIMIT_MAX = 20;
 const rateLimitStore = new Map();
 const USED_SOURCES_MARKER = '\n\n<<USED_SOURCES>>\n';
 const USED_SOURCES_MARKER_ALT = '\n<<USED_SOURCES>>\n';
+const USED_SOURCES_MARKER_INLINE = '<<USED_SOURCES>>';
 const USED_SOURCES_HEADER = '\n#### USED_SOURCES\n';
 const USED_SOURCES_MARKER_END = '\n<</USED_SOURCES>>';
+const USED_SOURCES_MARKER_END_INLINE = '<</USED_SOURCES>>';
 const USED_SOURCES_MARKER_LOWER = USED_SOURCES_MARKER.toLowerCase();
 const USED_SOURCES_MARKER_ALT_LOWER = USED_SOURCES_MARKER_ALT.toLowerCase();
+const USED_SOURCES_MARKER_INLINE_LOWER = USED_SOURCES_MARKER_INLINE.toLowerCase();
 const USED_SOURCES_HEADER_LOWER = USED_SOURCES_HEADER.toLowerCase();
 const USED_SOURCES_MARKER_END_LOWER = USED_SOURCES_MARKER_END.toLowerCase();
+const USED_SOURCES_MARKER_END_INLINE_LOWER =
+	USED_SOURCES_MARKER_END_INLINE.toLowerCase();
 const USED_SOURCES_MARKER_MAX_LEN = Math.max(
 	USED_SOURCES_MARKER.length,
 	USED_SOURCES_MARKER_ALT.length,
+	USED_SOURCES_MARKER_INLINE.length,
 	USED_SOURCES_HEADER.length
 );
 
@@ -45,6 +52,14 @@ function parseUsedSources(text) {
 		.replace(/^#+\s*USED_SOURCES\s*/i, '')
 		.trim();
 	if (!cleaned || cleaned.toLowerCase() === 'none') return [];
+	const idMatches = [
+		...cleaned.matchAll(
+			/\b(?:chunk\s*id|id)\s*[:=]\s*([a-z0-9_-]+)/gi
+		),
+	];
+	if (idMatches.length > 0) {
+		return [...new Set(idMatches.map((match) => match[1]))];
+	}
 	return cleaned
 		.split(/[\n,]+/)
 		.map((entry) => entry.trim())
@@ -139,7 +154,9 @@ export async function POST(request) {
 			);
 		}
 
-		const { messages, mode = 'casual' } = await request.json();
+		const { messages, mode = 'casual', intent } = await request.json();
+		const normalizedMode = normalizeChatMode(mode);
+		const isGreeting = intent === 'greeting';
 
 		if (!messages || !Array.isArray(messages) || messages.length === 0) {
 			return Response.json(
@@ -161,37 +178,41 @@ export async function POST(request) {
 
 		const query = lastUserMessage.content;
 
-		// Step 1: Classify intent and determine namespaces
-		const { namespaces, refinedQuery, skipRAG } = await classifyIntent(query);
-		console.log(`Classified: namespaces=${JSON.stringify(namespaces)}, skipRAG=${skipRAG}, refinedQuery="${refinedQuery}"`);
-
 		let relevantDocs = [];
 		let rerankedDocs = [];
+		let systemPrompt = '';
 
-		// Step 2-4: Only do RAG if needed
-		if (!skipRAG && namespaces.length > 0) {
-			// Step 2: Retrieve documents from Pinecone (multiple namespaces)
-			let documents = [];
-			try {
-				documents = await retrieveFromMultipleNamespaces(refinedQuery, namespaces);
-			} catch (error) {
-				console.error('Retrieval failed:', error);
+		if (isGreeting) {
+			systemPrompt = getGreetingSystemPrompt();
+		} else {
+			// Step 1: Classify intent and determine namespaces
+			const { namespaces, refinedQuery, skipRAG } = await classifyIntent(query);
+			console.log(`Classified: namespaces=${JSON.stringify(namespaces)}, skipRAG=${skipRAG}, refinedQuery="${refinedQuery}"`);
+
+			// Step 2-4: Only do RAG if needed
+			if (!skipRAG && namespaces.length > 0) {
+				// Step 2: Retrieve documents from Pinecone (multiple namespaces)
+				let documents = [];
+				try {
+					documents = await retrieveFromMultipleNamespaces(refinedQuery, namespaces);
+				} catch (error) {
+					console.error('Retrieval failed:', error);
+				}
+
+				// Step 3: Rerank documents
+				if (documents.length > 0) {
+					rerankedDocs = await rerankDocuments(refinedQuery, documents);
+				}
+
+				// Step 4: Filter by relevance
+				relevantDocs = filterByRelevance(rerankedDocs);
 			}
 
-			// Step 3: Rerank documents
-			if (documents.length > 0) {
-				rerankedDocs = await rerankDocuments(refinedQuery, documents);
-			}
-
-			// Step 4: Filter by relevance
-			relevantDocs = filterByRelevance(rerankedDocs);
+			// Step 5: Build system prompt with context
+			systemPrompt = getSystemPrompt(normalizedMode, relevantDocs);
 		}
 
 		const hasRelevantContext = relevantDocs.length > 0;
-
-		// Step 5: Build system prompt with context
-		const normalizedMode = normalizeChatMode(mode);
-		const systemPrompt = getSystemPrompt(normalizedMode, relevantDocs);
 
 		// Step 6: Generate response with streaming (Groq primary, OpenRouter fallback)
 		const encoder = new TextEncoder();
@@ -214,26 +235,44 @@ export async function POST(request) {
 						while (pending) {
 							const lowerPending = pending.toLowerCase();
 							if (capturingUsedSources) {
-								const endIdx = lowerPending.indexOf(USED_SOURCES_MARKER_END_LOWER);
+								const endIdxPrimary = lowerPending.indexOf(
+									USED_SOURCES_MARKER_END_LOWER
+								);
+								const endIdxInline = lowerPending.indexOf(
+									USED_SOURCES_MARKER_END_INLINE_LOWER
+								);
+								let endIdx = -1;
+								let endLen = 0;
+								const endCandidates = [
+									{ idx: endIdxPrimary, len: USED_SOURCES_MARKER_END.length },
+									{ idx: endIdxInline, len: USED_SOURCES_MARKER_END_INLINE.length },
+								].filter((item) => item.idx !== -1);
+								if (endCandidates.length > 0) {
+									endCandidates.sort((a, b) => a.idx - b.idx);
+									endIdx = endCandidates[0].idx;
+									endLen = endCandidates[0].len;
+								}
 								if (endIdx === -1) {
 									usedSourcesText += pending;
 									pending = '';
 									return;
 								}
 								usedSourcesText += pending.slice(0, endIdx);
-								pending = pending.slice(endIdx + USED_SOURCES_MARKER_END.length);
+								pending = pending.slice(endIdx + endLen);
 								capturingUsedSources = false;
 								continue;
 							}
 
 							const startIdxPrimary = lowerPending.indexOf(USED_SOURCES_MARKER_LOWER);
 							const startIdxAlt = lowerPending.indexOf(USED_SOURCES_MARKER_ALT_LOWER);
+							const startIdxInline = lowerPending.indexOf(USED_SOURCES_MARKER_INLINE_LOWER);
 							const startIdxHeader = lowerPending.indexOf(USED_SOURCES_HEADER_LOWER);
 							let startIdx = -1;
 							let markerLen = 0;
 							const candidates = [
 								{ idx: startIdxPrimary, len: USED_SOURCES_MARKER.length },
 								{ idx: startIdxAlt, len: USED_SOURCES_MARKER_ALT.length },
+								{ idx: startIdxInline, len: USED_SOURCES_MARKER_INLINE.length },
 								{ idx: startIdxHeader, len: USED_SOURCES_HEADER.length },
 							].filter((item) => item.idx !== -1);
 							if (candidates.length > 0) {
@@ -277,10 +316,16 @@ export async function POST(request) {
 					// After stream completes, append sources if we used RAG
 					if (hasRelevantContext) {
 						const usedSourceIds = parseUsedSources(usedSourcesText);
-						const usedDocs = filterDocsByUsedSources(
+						let usedDocs = filterDocsByUsedSources(
 							rerankedDocs,
 							usedSourceIds
 						);
+						if (usedDocs.length === 0 && relevantDocs.length > 0) {
+							console.warn(
+								'No USED_SOURCES IDs found in output; falling back to relevant docs.'
+							);
+							usedDocs = relevantDocs;
+						}
 						const suffix = formatSources(usedDocs);
 						if (suffix) {
 							enqueueContent(suffix);

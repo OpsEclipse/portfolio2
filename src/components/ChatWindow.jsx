@@ -24,10 +24,8 @@ const SOURCE_MARKER_END = '\n<</SOURCES>>';
 const MINIMIZED_ICON_SRC =
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAAEEfUpiAAAACXBIWXMAAAsSAAALEgHS3X78AAAQR0lEQVRYCQE8EMPvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAID/AAAA/wIAAAAAAAAA/wAAAADAwMAAAgAAAAAAAAABAIAAAEBAQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICA/4CAAP8AAAAAAYAAgP8AAAAAAAAAAIAAgAEAAAAAAAAAAP8AAAD/AAAAAAAAAAAAAAAAAAAAAAAAAAAAgACA/wAAAAAAAAAAAAAAAAIAAAAAAAAAAICAgP+AAID/AICAAP//AP+AAID/AAAAAAAAAAAAgACA/4CAgP//////AAAA/8DAwP8AAAD/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAID///8A/4AAgP8AAAAAAAAAAAIAAAAAAAAAAIAAgP8AAAAAAAAAAAAAAAAAAAD/AAAAAAIAAAAAgICA/wAAAAB//4AAgQGAAACAAAAAAAAAAAAAAAQAAAAAAIAAAH//fwCBgQAAAIAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAACAAID/gICA/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgID/AIAAAAAAAACAAIAAAAAAAQAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAACAgID/AIAAAACAAAAAAAAAAAAAAP//AACBgQD/AICAAAAAAACAAIABAAAAAAEAAAAAAAAAAAAAAACAgID/AIAAAAAAAAAAAAAAAAAAAACAgAAAgIAAAAAAAAAAAAAAgAAAgICAAAAAAAEAAAAAAgAAAAAAAAAAgACA/0BAQAB//38AAIAAAIAAgAAAAAAAAICAAAAAAAAAgAAAQMBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP+AAID/gICA////////////wMDA/4CAgP8AAAD/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP8AAAD/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgP8AgAAAAIAAAAAAAACAAIAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAID/AIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACA/wCAAAAAgAAAAAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAgQGAAAAAAAAAAAAAAAAAAIAAgAAAAAAAAAAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgP8AgAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAAH9/AAAAAAAAgYEAAACAgAAAAAAAAAAAAIAAgAAAAAABAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAID/AIAAAACAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIAAf38AAAAAAACBgQAAAAAAAIEBgAAAAAAAAAAAAAAAAACAAIAAgICAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAgACA/4AAgAAAAAAAAAAAAIAAgAAAAAAAAAAAAAAAAAAAAAAAAICAAH9/AACBgQAAAICAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACAAICAgABAQEAAAAAAAEBAQAAAAAABAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAgACA/4AAgADAwMAAAAAAAMDAwAAAAAAAgICAAAAAAACAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgACAgIAAQEBAAAAAAAAAAAAAwMDAAACAAACAAIAAAAAAAQAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPz8/AD8/PwAAAAAAf39/AAAAAACBgYEAAAAAAICAgAAAAAAAgACAAAAAAACAAIAAgICAAMBAwAAAAAAAAAAAAMDAwAAAgAAAgACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP8AAAAAgACAAAAAAAAAgAAAAAAAAH9/fwAAAAAAAAAAAAAAAAAAAAAAgYGBAAAAAABAQEAAAAAAAAAAAADAwMAAAIAAAIAAgAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/AAAAAIAAgAAAAAAAAIAAAAAAAAB/f38AAAAAAAAAAADBwcEAwMDAAACAAACAAIAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wAAAACAAIAAAAAAAACAAAAAgAAAgACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOohZMrBgjdjAAAAAElFTkSuQmCC';
 
-const INITIAL_MESSAGE = {
-	role: 'assistant',
-	content: `Welcome to the Sparsh Portfolio Navigator (v1.0). I'm running a high-performance RAG pipeline with Pinecone hybrid search and semantic chunking. In plain English: I've indexed Sparsh's career into a searchable 'brain' that you can now chat to. Ask me how this system works, or anything you want to know about Sparsh!`,
-};
+const GREETING_LOCATION = 'Oakville, Ontario, Canada';
+const GREETING_TIMEZONE = 'America/Toronto';
 
 const SAFE_URL_REGEX = /^https?:\/\/|^mailto:/;
 
@@ -51,6 +49,69 @@ function splitSources(content = '') {
 		body: content.slice(0, idx).trim(),
 		sourcesText: content.slice(idx + marker.length, sourcesEnd).trim(),
 	};
+}
+
+function getDayOfYear(year, month, day) {
+	const start = Date.UTC(year, 0, 1);
+	const current = Date.UTC(year, month - 1, day);
+	return Math.floor((current - start) / 86400000) + 1;
+}
+
+function getSeason(month) {
+	if (month === 12 || month <= 2) return 'winter';
+	if (month <= 5) return 'spring';
+	if (month <= 8) return 'summer';
+	return 'fall';
+}
+
+function buildGreetingContext() {
+	const now = new Date();
+	const dateKey = new Intl.DateTimeFormat('en-CA', {
+		timeZone: GREETING_TIMEZONE,
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+	}).format(now);
+	const [year, month, day] = dateKey.split('-').map(Number);
+	const dayOfYear = getDayOfYear(year, month, day);
+	const season = getSeason(month);
+	const dateLong = new Intl.DateTimeFormat('en-US', {
+		timeZone: GREETING_TIMEZONE,
+		weekday: 'long',
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+	}).format(now);
+	const dayOfWeek = new Intl.DateTimeFormat('en-US', {
+		timeZone: GREETING_TIMEZONE,
+		weekday: 'long',
+	}).format(now);
+	const timeShort = new Intl.DateTimeFormat('en-US', {
+		timeZone: GREETING_TIMEZONE,
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: true,
+		timeZoneName: 'short',
+	}).format(now);
+	const timeZoneLong =
+		new Intl.DateTimeFormat('en-US', {
+			timeZone: GREETING_TIMEZONE,
+			hour: 'numeric',
+			timeZoneName: 'long',
+		})
+			.formatToParts(now)
+			.find((part) => part.type === 'timeZoneName')?.value || 'Eastern Time';
+
+	return [
+		`App summary: Sparsh's portfolio and chat navigator.`,
+		`Sparsh location: ${GREETING_LOCATION}`,
+		`Local date: ${dateLong}`,
+		`Day of week: ${dayOfWeek}`,
+		`Local time: ${timeShort}`,
+		`Time zone: ${timeZoneLong}`,
+		`Day of year: ${dayOfYear}`,
+		`Season: ${season}`,
+	].join('\n');
 }
 
 function parseSources(sourcesText = '') {
@@ -84,7 +145,7 @@ function ChatWindow() {
 	const positionRef = useRef(DEFAULT_POSITION);
 	const [isMounted, setIsMounted] = useState(false);
 	const [mode, setMode] = useState('casual');
-	const [messages, setMessages] = useState([INITIAL_MESSAGE]);
+	const [messages, setMessages] = useState([]);
 	const [input, setInput] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const [rateLimitUntil, setRateLimitUntil] = useState(null);
@@ -96,6 +157,7 @@ function ChatWindow() {
 	const [iconPosition, setIconPosition] = useState({ x: 0, y: 0 });
 	const iconPositionRef = useRef({ x: 0, y: 0 });
 	const hasInitializedResponsive = useRef(false);
+	const hasRequestedGreeting = useRef(false);
 
 	const handleModeChange = (event) => {
 		setMode(event.target.value);
@@ -240,6 +302,7 @@ function ChatWindow() {
 		};
 	}, [isLoaded]);
 
+
 	const setResizeHandleRef = useCallback(
 		(node) => {
 			if (resizeCleanupRef.current) {
@@ -306,10 +369,6 @@ function ChatWindow() {
 		};
 	}, []);
 
-	if (!isMounted) {
-		return null;
-	}
-
 	const handleHeaderPointerDown = (event) => {
 		if (event.button !== 0) return;
 		if (event.target.closest('button')) return;
@@ -340,126 +399,171 @@ function ChatWindow() {
 		window.addEventListener('pointercancel', onPointerUp);
 	};
 
-	const handleSend = async () => {
-		if (!input.trim() || isLoading) return;
-		if (rateLimitUntil && Date.now() < rateLimitUntil) {
-			setMessages((prev) => [
-				...prev,
-				{
-					role: 'assistant',
-					content: `Rate limit exceeded. Please try again in ${rateLimitRemaining || 1}s.`,
-				},
-			]);
-			return;
-		}
-
-		const userMessage = { role: 'user', content: input.trim() };
-		const newMessages = [...messages, userMessage];
-		setMessages(newMessages);
-		setInput('');
-		setIsLoading(true);
-
-		try {
-			const response = await fetch('/api/chat', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					messages: [userMessage],
-					mode,
-				}),
-			});
-
-			if (!response.ok) {
-				let errorMessage = 'Failed to get response';
-				try {
-					const errorData = await response.json();
-					if (errorData?.error) {
-						errorMessage = errorData.error;
-					}
-				} catch {
-					// Ignore JSON parse errors for error responses
-				}
-
-				if (response.status === 429) {
-					const retryAfterHeader = response.headers.get('retry-after');
-					const retryAfterSeconds = Math.max(
-						1,
-						Number.parseInt(retryAfterHeader, 10) || 30
-					);
-					setRateLimitUntil(Date.now() + retryAfterSeconds * 1000);
-					setMessages((prev) => [
-						...prev,
-						{
-							role: 'assistant',
-							content: `Rate limit exceeded. Please try again in ${retryAfterSeconds}s.`,
-						},
-					]);
-					return;
-				}
-
-				throw new Error(errorMessage);
+	const streamAssistantResponse = useCallback(
+		async ({
+			userMessage,
+			includeUserMessage = true,
+			intent,
+			modeOverride,
+			resetMessages = false,
+		}) => {
+			if (!userMessage?.content?.trim() || isLoading) return;
+			if (includeUserMessage && rateLimitUntil && Date.now() < rateLimitUntil) {
+				setMessages((prev) => [
+					...prev,
+					{
+						role: 'assistant',
+						content: `Rate limit exceeded. Please try again in ${rateLimitRemaining || 1}s.`,
+					},
+				]);
+				return;
 			}
 
-			// Add empty assistant message for streaming
-			setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+			if (resetMessages) {
+				setMessages([]);
+			}
 
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder();
+			if (includeUserMessage) {
+				setMessages((prev) => [...prev, userMessage]);
+				setInput('');
+			}
 
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
+			setIsLoading(true);
 
-				const chunk = decoder.decode(value);
-				const lines = chunk.split('\n');
+			try {
+				const response = await fetch('/api/chat', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						messages: [userMessage],
+						mode: modeOverride ?? mode,
+						intent,
+					}),
+				});
 
-				for (const line of lines) {
-					if (line.startsWith('data: ')) {
-						const data = line.slice(6);
-						if (data === '[DONE]') continue;
+				if (!response.ok) {
+					let errorMessage = 'Failed to get response';
+					try {
+						const errorData = await response.json();
+						if (errorData?.error) {
+							errorMessage = errorData.error;
+						}
+					} catch {
+						// Ignore JSON parse errors for error responses
+					}
 
-						try {
-							const parsed = JSON.parse(data);
-							if (parsed.content) {
-								setMessages((prev) => {
-									const updated = [...prev];
-									const lastIdx = updated.length - 1;
-									if (updated[lastIdx]?.role === 'assistant') {
-										updated[lastIdx] = {
-											...updated[lastIdx],
-											content: updated[lastIdx].content + parsed.content,
-										};
-									}
-									return updated;
-								});
+					if (response.status === 429) {
+						const retryAfterHeader = response.headers.get('retry-after');
+						const retryAfterSeconds = Math.max(
+							1,
+							Number.parseInt(retryAfterHeader, 10) || 30
+						);
+						setRateLimitUntil(Date.now() + retryAfterSeconds * 1000);
+						setMessages((prev) => [
+							...prev,
+							{
+								role: 'assistant',
+								content: `Rate limit exceeded. Please try again in ${retryAfterSeconds}s.`,
+							},
+						]);
+						return;
+					}
+
+					throw new Error(errorMessage);
+				}
+
+				// Add empty assistant message for streaming
+				setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+
+				const reader = response.body.getReader();
+				const decoder = new TextDecoder();
+
+				while (true) {
+					const { done, value } = await reader.read();
+					if (done) break;
+
+					const chunk = decoder.decode(value);
+					const lines = chunk.split('\n');
+
+					for (const line of lines) {
+						if (line.startsWith('data: ')) {
+							const data = line.slice(6);
+							if (data === '[DONE]') continue;
+
+							try {
+								const parsed = JSON.parse(data);
+								if (parsed.content) {
+									setMessages((prev) => {
+										const updated = [...prev];
+										const lastIdx = updated.length - 1;
+										if (updated[lastIdx]?.role === 'assistant') {
+											updated[lastIdx] = {
+												...updated[lastIdx],
+												content: updated[lastIdx].content + parsed.content,
+											};
+										}
+										return updated;
+									});
+								}
+								if (parsed.error) {
+									const detail = parsed.detail ? ` (${parsed.detail})` : '';
+									console.error(`Stream error: ${parsed.error}${detail}`);
+								}
+							} catch {
+								// Ignore JSON parse errors for incomplete chunks
 							}
-							if (parsed.error) {
-								const detail = parsed.detail ? ` (${parsed.detail})` : '';
-								console.error(`Stream error: ${parsed.error}${detail}`);
-							}
-						} catch {
-							// Ignore JSON parse errors for incomplete chunks
 						}
 					}
 				}
+			} catch (error) {
+				console.error('Chat error:', error);
+				setMessages((prev) => [
+					...prev,
+					{
+						role: 'assistant',
+						content: error?.message || 'Sorry, I encountered an error. Please try again.',
+					},
+				]);
+			} finally {
+				setIsLoading(false);
 			}
-		} catch (error) {
-			console.error('Chat error:', error);
-			setMessages((prev) => [
-				...prev,
-				{
-					role: 'assistant',
-					content: error?.message || 'Sorry, I encountered an error. Please try again.',
-				},
-			]);
-		} finally {
-			setIsLoading(false);
-		}
+		},
+		[isLoading, mode, rateLimitRemaining, rateLimitUntil]
+	);
+
+	const requestGreeting = useCallback(
+		({ force = false, reset = false } = {}) => {
+			if (isLoading) return;
+			if (hasRequestedGreeting.current && !force) return;
+			hasRequestedGreeting.current = true;
+			const userMessage = { role: 'user', content: buildGreetingContext() };
+			streamAssistantResponse({
+				userMessage,
+				includeUserMessage: false,
+				intent: 'greeting',
+				modeOverride: 'casual',
+				resetMessages: reset,
+			});
+		},
+		[isLoading, streamAssistantResponse]
+	);
+
+	useEffect(() => {
+		if (!isLoaded || showInitializing) return;
+		if (messages.length > 0) return;
+		requestGreeting();
+	}, [isLoaded, messages.length, requestGreeting, showInitializing]);
+
+	const handleSend = () => {
+		if (!input.trim() || isLoading) return;
+		const userMessage = { role: 'user', content: input.trim() };
+		streamAssistantResponse({ userMessage });
 	};
 
 	const handleClear = () => {
-		setMessages([INITIAL_MESSAGE]);
 		setInput('');
+		hasRequestedGreeting.current = false;
+		requestGreeting({ force: true, reset: true });
 	};
 
 	const handleMinimize = () => {
@@ -513,6 +617,10 @@ function ChatWindow() {
 			handleSend();
 		}
 	};
+
+	if (!isMounted) {
+		return null;
+	}
 
 	if (isMinimized) {
 		return (
