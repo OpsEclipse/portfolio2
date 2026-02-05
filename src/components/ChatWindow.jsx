@@ -294,8 +294,8 @@ function ChatWindow() {
 
 	useEffect(() => {
 		if (!isLoaded) return undefined;
-		const startTimer = window.setTimeout(() => setShowInitializing(true), 700);
-		const endTimer = window.setTimeout(() => setShowInitializing(false), 4700);
+		const startTimer = window.setTimeout(() => setShowInitializing(true), 200);
+		const endTimer = window.setTimeout(() => setShowInitializing(false), 2000);
 		return () => {
 			window.clearTimeout(startTimer);
 			window.clearTimeout(endTimer);
