@@ -1,85 +1,84 @@
-# Pinecone RAG Architecture Specification
+# Portfolio RAG Architecture Specification
 
-This document outlines the technical implementation for a multi-stage Retrieval-Augmented Generation (RAG) pipeline built with **Next.js**, **Pinecone**, and the **Vercel AI SDK**.
-
----
-
-## 🛠️ System Architecture
-
-The pipeline follows a high-precision flow designed to reduce noise and improve the relevance of retrieved context through intent classification and re-ranking.
-
-### 1. Gatekeeper & Intent Layer
-The initial request enters via a **Next.js Serverless Route**. Before querying the database, a "Gatekeeper" LLM processes the input:
-* **Query Rewriting:** Normalizes "not chill" (ambiguous) queries into optimized search terms.
-* **Metadata Extraction:** Identifies the user's intent to apply a `namespace` or `metadata filter`, ensuring retrieval is **Scoped**.
-
-### 2. Retrieval Stage (Scoped Retrieval)
-* **Embedding:** The refined query is vectorized using the `OpenAI embedding` model (e.g., `text-embedding-3-small`).
-* **Semantic Search:** Queries Pinecone using the vector + the extracted metadata filters.
-* **Top X Chunks:** Initial retrieval of a broader set of results (e.g., 10-20 chunks) to ensure high recall.
-
-### 3. Precision Stage (Re-ranking)
-* **Pinecone Reranker:** The **Top X** chunks are passed through a Cross-Encoder model.
-* **Top N Chunks:** The results are re-ordered by actual relevance to the query. Only the top $N$ (e.g., 3-5) most relevant chunks are kept, significantly increasing the signal-to-noise ratio for the final LLM.
-
-### 4. Generation Layer
-* **Free LLM:** The reranked context is injected into a prompt for a cost-efficient model (e.g., GPT-4o-mini).
-* **Streamed Markdown:** The response is streamed back to the client via **Vercel AI SDK** for a real-time UI experience.
+This document reflects the current codebase implementation of the portfolio RAG pipeline in **Next.js** with **Pinecone** retrieval/reranking, **OpenAI embeddings**, and **Groq/OpenRouter** for generation.
 
 ---
 
-## 💻 Technical Specifications
+## 🛠️ System Architecture (Actual Flow)
 
-### Implementation Blueprint (`/api/chat/route.ts`)
+The pipeline is optimized for scoped retrieval, relevance filtering, and low-latency streaming.
 
-```typescript
-import { Pinecone } from '@pinecone-database/pinecone';
-import { openai } from '@ai-sdk/openai';
-import { streamText, embed } from 'ai';
+### 1. Request Intake & Rate Limiting
+The chat request hits `app/api/chat/route.js` (App Router). A simple in-memory rate limiter allows **20 requests per minute per client**.
 
-const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
+### 2. Gatekeeper & Intent Classification
+A Gatekeeper LLM classifies the query and determines **which namespaces to search** (or to skip RAG entirely), and rewrites the query for retrieval:
+* **Namespaces:** `personal_life`, `professional_life`, `about_rag`
+* **Coverage bias:** ambiguous queries can return multiple namespaces.
+* **Primary model:** Groq Llama (fallback to OpenRouter).
 
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const userQuery = messages[messages.length - 1].content;
+### 3. Embedding & Retrieval
+* **Embeddings:** OpenAI `text-embedding-3-small`
+* **Vector DB:** Pinecone index `PINECONE_INDEX` (default `portfolio-rag`)
+* **Top K:** `12` per namespace
+* **Metadata:** `includeMetadata: true`
+* Results across namespaces are **merged and sorted by score**.
 
-  // 1. GATEKEEPER: Intent Extraction
-  // Logic to determine 'namespace' and 'rewrittenQuery'
-  const namespace = "internal_docs"; 
-  const refinedQuery = userQuery; 
+### 4. Reranking & Filtering
+* **Reranker:** Pinecone Inference `bge-reranker-v2-m3`
+* **Top N:** `5`
+* **Relevance threshold:** minimum rerank score `0.4`
+* If rerank fails, top-N by original score is used as fallback.
 
-  // 2. EMBEDDING
-  const { embedding } = await embed({
-    model: openai.embedding('text-embedding-3-small'),
-    value: refinedQuery,
-  });
+### 5. Prompt Construction
+* The system prompt injects context snippets with metadata.
+* Each snippet includes **heading** and **chunk_id** for traceability.
+* If no relevant context is found, a fallback context block is used.
 
-  // 3. SCOPED RETRIEVAL (Top X)
-  const index = pc.Index(process.env.PINECONE_INDEX!);
-  const searchResults = await index.namespace(namespace).query({
-    vector: embedding,
-    topK: 15,
-    includeMetadata: true,
-  });
+### 6. Generation & Streaming
+* **Primary LLM:** Groq `meta-llama/llama-4-maverick-17b-128e-instruct`
+* **Fallback LLM:** OpenRouter `meta-llama/llama-4-maverick-instruct`
+* **Streaming:** Manual SSE (`data: {content: ...}`) from the route handler.
 
-  // 4. PRECISION (Reranking to Top N)
-  // Utilizing Pinecone Inference for Reranking
-  const documents = searchResults.matches.map(m => m.metadata?.text as string);
-  const reranked = await pc.inference.rerank({
-    model: "bge-reranker-v2-m3",
-    query: refinedQuery,
-    documents: documents,
-    topN: 5,
-  });
+### 7. Source Attribution (Used Sources)
+The model is instructed to append a hidden block:
+```
+<<USED_SOURCES>>
+chunk_id_1
+chunk_id_2
+<</USED_SOURCES>>
+```
+The server strips this from the stream, maps chunk IDs back to documents, and appends a visible `<<SOURCES>>` block. The UI renders these as source links with:
+* `doc_title`
+* `heading`
+* optional `source_url`
 
-  const finalContext = reranked.data.map(d => d.document.text).join("\n");
+---
 
-  // 5. GENERATION
-  const result = await streamText({
-    model: openai('gpt-4o-mini'),
-    system: `You are a precise assistant. Context: ${finalContext}`,
-    messages,
-  });
+## 💻 Technical Details (Code Reference)
 
-  return result.toDataStreamResponse();
-}
+Key modules and responsibilities:
+* `app/api/chat/route.js`: Request handling, rate limiting, streaming, used-source parsing.
+* `src/lib/rag/gatekeeper.js`: Namespace classification + query refinement.
+* `src/lib/rag/retrieval.js`: OpenAI embeddings + Pinecone search.
+* `src/lib/rag/reranker.js`: Pinecone inference reranking + relevance filter.
+* `src/lib/prompts.js`: System prompt templates + context formatting.
+* `src/lib/rag/constants.js`: Model IDs and RAG config values.
+
+---
+
+## ⚙️ Configuration
+
+Environment variables:
+* `PINECONE_API_KEY`
+* `PINECONE_INDEX` (default: `portfolio-rag`)
+* `OPENAI_API_KEY`
+* `GROQ_API_KEY`
+* `OPENROUTER_API_KEY`
+
+RAG tuning (from `src/lib/rag/constants.js`):
+* `TOP_K`: 12
+* `TOP_N`: 5
+* `MIN_RERANK_SCORE`: 0.4
+* `EMBEDDINGS`: `text-embedding-3-small`
+* `RERANKER`: `bge-reranker-v2-m3`

@@ -20,6 +20,10 @@ const USED_SOURCES_MARKER = '\n\n<<USED_SOURCES>>\n';
 const USED_SOURCES_MARKER_ALT = '\n<<USED_SOURCES>>\n';
 const USED_SOURCES_HEADER = '\n#### USED_SOURCES\n';
 const USED_SOURCES_MARKER_END = '\n<</USED_SOURCES>>';
+const USED_SOURCES_MARKER_LOWER = USED_SOURCES_MARKER.toLowerCase();
+const USED_SOURCES_MARKER_ALT_LOWER = USED_SOURCES_MARKER_ALT.toLowerCase();
+const USED_SOURCES_HEADER_LOWER = USED_SOURCES_HEADER.toLowerCase();
+const USED_SOURCES_MARKER_END_LOWER = USED_SOURCES_MARKER_END.toLowerCase();
 const USED_SOURCES_MARKER_MAX_LEN = Math.max(
 	USED_SOURCES_MARKER.length,
 	USED_SOURCES_MARKER_ALT.length,
@@ -208,8 +212,9 @@ export async function POST(request) {
 
 					const processPending = () => {
 						while (pending) {
+							const lowerPending = pending.toLowerCase();
 							if (capturingUsedSources) {
-								const endIdx = pending.indexOf(USED_SOURCES_MARKER_END);
+								const endIdx = lowerPending.indexOf(USED_SOURCES_MARKER_END_LOWER);
 								if (endIdx === -1) {
 									usedSourcesText += pending;
 									pending = '';
@@ -221,9 +226,9 @@ export async function POST(request) {
 								continue;
 							}
 
-							const startIdxPrimary = pending.indexOf(USED_SOURCES_MARKER);
-							const startIdxAlt = pending.indexOf(USED_SOURCES_MARKER_ALT);
-							const startIdxHeader = pending.indexOf(USED_SOURCES_HEADER);
+							const startIdxPrimary = lowerPending.indexOf(USED_SOURCES_MARKER_LOWER);
+							const startIdxAlt = lowerPending.indexOf(USED_SOURCES_MARKER_ALT_LOWER);
+							const startIdxHeader = lowerPending.indexOf(USED_SOURCES_HEADER_LOWER);
 							let startIdx = -1;
 							let markerLen = 0;
 							const candidates = [

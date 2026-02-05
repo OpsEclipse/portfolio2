@@ -165,6 +165,96 @@ export const GlobalStyles = createGlobalStyle`
     color: #6b7280;
   }
 
+  .chat-minimized-tile {
+    width: 192px;
+    height: 64px;
+    padding: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: #c0c0c0;
+    border: 2px solid #c0c0c0;
+    border-radius: 2px;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #808080, 2px 2px 0 #000000;
+    font-family: 'W95FA', 'ms_sans_serif', sans-serif;
+    cursor: grab;
+    user-select: none;
+  }
+
+  .chat-minimized-tile:hover {
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #808080, 3px 3px 0 #000000;
+  }
+
+  .chat-minimized-tile:active {
+    cursor: grabbing;
+    transform: translate(1px, 1px);
+    box-shadow: inset -1px -1px 0 #ffffff, inset 1px 1px 0 #808080;
+  }
+
+  .chat-minimized-tile:focus-visible {
+    outline: 1px dotted #000000;
+    outline-offset: 2px;
+  }
+
+  .chat-minimized-tile__header {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 6px;
+    background: linear-gradient(90deg, #000080 0%, #0a5aa8 100%);
+    color: #ffffff;
+  }
+
+  .chat-minimized-tile__icon {
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #c0c0c0;
+    border: 1px solid #ffffff;
+    box-shadow: inset -1px -1px 0 #808080;
+  }
+
+  .chat-minimized-tile__icon img {
+    width: 10px;
+    height: 10px;
+    image-rendering: pixelated;
+  }
+
+  .chat-minimized-tile__title {
+    font-size: 11px;
+    letter-spacing: 0.2px;
+  }
+
+  .chat-minimized-tile__indicator {
+    width: 8px;
+    height: 8px;
+    margin-left: auto;
+    border: 1px solid #004d00;
+    background: #00c000;
+    box-shadow: inset 1px 1px 0 #9dff9d;
+  }
+
+  .chat-minimized-tile__body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+    font-size: 10px;
+    color: #1a1a1a;
+  }
+
+  .chat-minimized-tile__meta {
+    opacity: 0.9;
+  }
+
+  .chat-minimized-tile__hint {
+    opacity: 0.65;
+  }
+
   .app-window__input input {
     font-family: 'W95FA', 'ms_sans_serif', sans-serif;
     font-weight: 100;

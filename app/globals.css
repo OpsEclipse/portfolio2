@@ -172,3 +172,19 @@ body {
 	height: 48px;
 	image-rendering: pixelated;
 }
+
+/* Chat message links */
+.chat-message__content a {
+	color: #0000ee;
+	text-decoration: underline;
+	cursor: pointer;
+	transition: color 0.15s ease;
+}
+
+.chat-message__content a:hover {
+	color: #551a8b;
+}
+
+.chat-message__content a:visited {
+	color: #551a8b;
+}

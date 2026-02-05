@@ -9,6 +9,7 @@ const KNOWLEDGE_OVERVIEW = `
 1. **Professional Life:** - Work as a Software Engineer.
    - Education at University of Waterloo (systems design engineering).
    - Technical skills (Frontend, Backend, AI/ML), project repos, and career achievements.
+   - Contact information (email, phone, linkedin, github, etc.).
 2. **Personal Life:** - Personal interests, hobbies, and background stories.
    - Values and public-facing personal milestones.
 3. **The System (RAG):** - How I retrieve info from Sparsh's vector database.
@@ -21,6 +22,7 @@ const BASE_CONSTRAINTS = `
 * Use the Knowledge Categories above to guide your answers.
 * If a query falls outside these three categories, politely redirect the user.
 * **No Context?** If the search results ({context}) are empty, rely on your core knowledge of Sparsh at FriedmannAI/UWaterloo.
+* **Links:** When providing URLs or links, always format them as markdown links: [descriptive text](https://url.com). This makes them clickable for the user.
 * After your answer, append a hidden block exactly like:
 <<USED_SOURCES>>
 chunk_id_1
@@ -118,16 +120,13 @@ export function formatSources(documents) {
 
 	const sourceLines = usedDocs.map((doc) => {
 		const title = doc.metadata?.doc_title || 'Reference Doc';
-		const heading = doc.metadata?.heading
-			? ` (${doc.metadata.heading})`
-			: '';
+		const heading = doc.metadata?.heading || '';
+		const label = heading ? `${title} — ${heading}` : title;
 		const url = doc.metadata?.source_url;
-		const chunkId = doc.metadata?.chunk_id ?? doc.metadata?.chunkId ?? doc.id;
-		const chunkLabel = chunkId ? ` (chunk ${chunkId})` : '';
 
 		return url
-			? `* [${title}](${url})${heading}${chunkLabel}`
-			: `* ${title}${heading}${chunkLabel}`;
+			? `* [${label}](${url})`
+			: `* ${label}`;
 	});
 
 	return `\n\n<<SOURCES>>\n${sourceLines.join('\n')}\n<</SOURCES>>`;
