@@ -3,6 +3,7 @@ import { getOpenRouterClient } from '@/lib/openrouter';
 import {
 	formatSources,
 	getSystemPrompt,
+	normalizeChatMode,
 } from '@/lib/prompts';
 import { MODELS } from '@/lib/rag/constants';
 import { classifyIntent } from '@/lib/rag/gatekeeper';
@@ -81,13 +82,14 @@ function isRateLimited(clientId) {
 }
 
 async function* streamWithFallback(systemPrompt, messages, mode) {
+	const normalizedMode = normalizeChatMode(mode);
 	const config = {
 		messages: [
 			{ role: 'system', content: systemPrompt },
 			...messages,
 		],
 		stream: true,
-		temperature: mode === 'casual' ? 0.8 : 0.5,
+		temperature: normalizedMode === 'slang' ? 0.9 : 0.8,
 		max_tokens: 1024,
 	};
 
@@ -133,7 +135,7 @@ export async function POST(request) {
 			);
 		}
 
-		const { messages, mode = 'professional' } = await request.json();
+		const { messages, mode = 'casual' } = await request.json();
 
 		if (!messages || !Array.isArray(messages) || messages.length === 0) {
 			return Response.json(
@@ -184,7 +186,8 @@ export async function POST(request) {
 		const hasRelevantContext = relevantDocs.length > 0;
 
 		// Step 5: Build system prompt with context
-		const systemPrompt = getSystemPrompt(mode, relevantDocs);
+		const normalizedMode = normalizeChatMode(mode);
+		const systemPrompt = getSystemPrompt(normalizedMode, relevantDocs);
 
 		// Step 6: Generate response with streaming (Groq primary, OpenRouter fallback)
 		const encoder = new TextEncoder();
@@ -253,7 +256,7 @@ export async function POST(request) {
 						}
 					};
 
-					for await (const chunk of streamWithFallback(systemPrompt, messagesForModel, mode)) {
+					for await (const chunk of streamWithFallback(systemPrompt, messagesForModel, normalizedMode)) {
 						const content = chunk?.choices?.[0]?.delta?.content;
 						if (content) {
 							pending += content;

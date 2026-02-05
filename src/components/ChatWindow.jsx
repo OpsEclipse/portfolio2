@@ -76,12 +76,12 @@ function ChatWindow() {
 	const resizeCleanupRef = useRef(null);
 	const windowRef = useRef(null);
 	const scrollRef = useRef(null);
-	const sizeRef = useRef({ width: 370, height: 520 });
+	const sizeRef = useRef({ width: 450, height: 700 });
 	const [size, setSize] = useState(sizeRef.current);
 	const [position, setPosition] = useState(DEFAULT_POSITION);
 	const positionRef = useRef(DEFAULT_POSITION);
 	const [isMounted, setIsMounted] = useState(false);
-	const [mode, setMode] = useState('professional');
+	const [mode, setMode] = useState('casual');
 	const [messages, setMessages] = useState([INITIAL_MESSAGE]);
 	const [input, setInput] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
@@ -676,20 +676,20 @@ function ChatWindow() {
 					>
 						<div className="flex flex-col px-[2px] gap-1">
 							<Radio
-								checked={mode === 'professional'}
+								checked={mode === 'casual'}
 								onChange={handleModeChange}
-								value="professional"
-								label="Professional"
+								value="casual"
+								label="Casual"
 								name="chat-mode"
 								className="my-0"
 								disabled={isLoading}
 							/>
 							<br />
 							<Radio
-								checked={mode === 'casual'}
+								checked={mode === 'slang'}
 								onChange={handleModeChange}
-								value="casual"
-								label="Sparsh mode"
+								value="slang"
+								label="Slang"
 								name="chat-mode"
 								disabled={isLoading}
 							/>
