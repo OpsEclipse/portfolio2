@@ -93,6 +93,9 @@ export const GlobalStyles = createGlobalStyle`
     overflow-wrap: break-word;
     opacity: 0.85;
     letter-spacing: 0.3px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .chat-sources {
