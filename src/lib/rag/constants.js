@@ -5,15 +5,13 @@ export const NAMESPACES = {
 };
 
 export const MODELS = {
-	// Groq (primary) - Using the current verified production IDs
+	// Groq (primary) - verified March 10, 2026
 	GATEKEEPER_FALLBACK: 'meta-llama/llama-4-scout-17b-16e-instruct',
-	GENERATOR_FALLBACK:
-		'meta-llama/llama-4-maverick-17b-128e-instruct',
+	GENERATOR_FALLBACK: 'openai/gpt-oss-120b',
 
-	// OpenRouter (fallback) - Updated to the current stable Qwen/Llama IDs
-	// Note: ":free" suffix is only for the specific free-tier endpoints
+	// OpenRouter (fallback) - verified March 10, 2026
 	GATEKEEPER: 'qwen/qwen3-next-80b-instruct',
-	GENERATOR: 'meta-llama/llama-4-maverick-instruct',
+	GENERATOR: 'meta-llama/llama-4-maverick',
 
 	// OpenAI for embeddings
 	EMBEDDINGS: 'text-embedding-3-small',

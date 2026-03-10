@@ -36,8 +36,8 @@ A Gatekeeper LLM classifies the query and determines **which namespaces to searc
 * If no relevant context is found, a fallback context block is used.
 
 ### 6. Generation & Streaming
-* **Primary LLM:** Groq `meta-llama/llama-4-maverick-17b-128e-instruct`
-* **Fallback LLM:** OpenRouter `meta-llama/llama-4-maverick-instruct`
+* **Primary LLM:** Groq `openai/gpt-oss-120b`
+* **Fallback LLM:** OpenRouter `meta-llama/llama-4-maverick`
 * **Streaming:** Manual SSE (`data: {content: ...}`) from the route handler.
 
 ### 7. Source Attribution (Used Sources)
