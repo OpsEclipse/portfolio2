@@ -18,6 +18,7 @@ const VIEWPORT_PADDING = 12;
 const DEFAULT_POSITION = { x: 700, y: 175 };
 const ICON_SIZE = 56;
 const MOBILE_BREAKPOINT = 640;
+const DESKTOP_DOCK_BREAKPOINT = 1280;
 const SOURCE_MARKER = '\n\n<<SOURCES>>\n';
 const SOURCE_MARKER_ALT = '\n<<SOURCES>>\n';
 const SOURCE_MARKER_END = '\n<</SOURCES>>';
@@ -144,6 +145,7 @@ function ChatWindow() {
 	const [position, setPosition] = useState(DEFAULT_POSITION);
 	const positionRef = useRef(DEFAULT_POSITION);
 	const [isMounted, setIsMounted] = useState(false);
+	const [viewportWidth, setViewportWidth] = useState(0);
 	const [mode, setMode] = useState('casual');
 	const [messages, setMessages] = useState([]);
 	const [input, setInput] = useState('');
@@ -158,6 +160,7 @@ function ChatWindow() {
 	const iconPositionRef = useRef({ x: 0, y: 0 });
 	const hasInitializedResponsive = useRef(false);
 	const hasRequestedGreeting = useRef(false);
+	const isDesktopDocked = viewportWidth >= DESKTOP_DOCK_BREAKPOINT;
 
 	const handleModeChange = (event) => {
 		setMode(event.target.value);
@@ -255,6 +258,7 @@ function ChatWindow() {
 
 	useEffect(() => {
 		setIsMounted(true);
+		setViewportWidth(window.innerWidth);
 
 		requestAnimationFrame(() => {
 			const rect = windowRef.current?.getBoundingClientRect();
@@ -285,12 +289,19 @@ function ChatWindow() {
 
 	useEffect(() => {
 		const handleResize = () => {
+			setViewportWidth(window.innerWidth);
 			clampToViewport();
 			clampIconToViewport();
 		};
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
 	}, [clampToViewport, clampIconToViewport]);
+
+	useEffect(() => {
+		if (isDesktopDocked) {
+			setIsMinimized(false);
+		}
+	}, [isDesktopDocked]);
 
 	useEffect(() => {
 		if (!isLoaded) return undefined;
@@ -623,6 +634,38 @@ function ChatWindow() {
 	}
 
 	if (isMinimized) {
+		if (isDesktopDocked) {
+			return (
+				<div className="w-full max-w-[380px] shrink-0 xl:sticky xl:top-8">
+					<button
+						type="button"
+						className={`chat-minimized-tile pointer-events-auto transition-opacity duration-500 ${
+							isLoaded ? 'opacity-100' : 'opacity-0'
+						}`}
+						onPointerDown={handleIconPointerDown}
+						aria-label="Open chat window"
+					>
+						<div className="chat-minimized-tile__header">
+							<div className="chat-minimized-tile__icon">
+								{/* eslint-disable-next-line @next/next/no-img-element */}
+								<img
+									src={MINIMIZED_ICON_SRC}
+									alt=""
+									draggable={false}
+								/>
+							</div>
+							<span className="chat-minimized-tile__title">Chat</span>
+							<div className="chat-minimized-tile__indicator" />
+						</div>
+						<div className="chat-minimized-tile__body">
+							<span className="chat-minimized-tile__meta">Click to open</span>
+							<span className="chat-minimized-tile__hint">Ready</span>
+						</div>
+					</button>
+				</div>
+			);
+		}
+
 		return (
 			<div className="fixed inset-0 z-50 pointer-events-none">
 				<button
@@ -659,187 +702,206 @@ function ChatWindow() {
 		);
 	}
 
-	return (
-		<div className="fixed inset-0 z-50 pointer-events-none">
-			<Window
-				resizable
-				resizeRef={setResizeHandleRef}
-				className={`app-window pointer-events-auto transition-opacity transition-transform duration-700 animate-maximize-in ${
-					isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-				}`}
-				ref={windowRef}
-				style={{
-					position: 'absolute',
-					left: position.x,
-					top: position.y,
-					width: size.width,
-					height: size.height,
-				}}
+	const chatWindow = (
+		<Window
+			resizable={!isDesktopDocked}
+			resizeRef={isDesktopDocked ? undefined : setResizeHandleRef}
+			className={`app-window pointer-events-auto transition-opacity transition-transform duration-700 animate-maximize-in ${
+				isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+			}`}
+			ref={windowRef}
+			style={
+				isDesktopDocked
+					? {
+							width: '100%',
+							height: 'min(720px, calc(100vh - 96px))',
+					  }
+					: {
+							position: 'absolute',
+							left: position.x,
+							top: position.y,
+							width: size.width,
+							height: size.height,
+					  }
+			}
+		>
+			<WindowHeader
+				active="true"
+				className="app-window__header flex items-center justify-between"
+				onPointerDown={isDesktopDocked ? undefined : handleHeaderPointerDown}
 			>
-				<WindowHeader
-					active="true"
-					className="app-window__header flex items-center justify-between"
-					onPointerDown={handleHeaderPointerDown}
+				<span>{showInitializing ? '' : 'Chat'}</span>
+				<Button
+					active={null}
+					className="app-window__close"
+					onClick={handleMinimize}
 				>
-					<span>{showInitializing ? '' : 'Chat'}</span>
-					<Button
-						active={null}
-						className="app-window__close"
-						onClick={handleMinimize}
-					>
-						<span className="close-icon" />
-					</Button>
-				</WindowHeader>
-				<WindowContent className="app-window__content relative">
-					{showInitializing && (
-						<div className="absolute inset-0 z-10 flex items-center justify-center bg-white/100">
-							<Loader variant="inline" active />
-						</div>
-					)}
-					<ScrollView
-						shadow="true"
-						className="app-window__scroll"
-						ref={scrollRef}
-					>
-						<div className="app-window__scroll-inner">
-							{!showInitializing && (
-								<>
-									{!isLoaded && (
-										<div className="text-left flex items-center gap-2">
-											<Loader variant="inline" active />
-											<span className="text-xs">Loading chat...</span>
-										</div>
-									)}
-									{isLoaded && messages.map((msg, idx) => {
-										const { body, sourcesText } = splitSources(msg.content);
-										const sources = parseSources(sourcesText);
-										return (
-											<ChatMessage
-												key={idx}
-												variant={msg.role === 'user' ? 'user' : 'ai'}
-												content={body}
-											>
-												{sources.length > 0 && (
-													<div className="chat-sources">
-														<div className="chat-sources__header">
-															<span className="chat-sources__badge">Source Log</span>
-															<span className="chat-sources__count">
-																{sources.length} {sources.length === 1 ? 'item' : 'items'}
-															</span>
-														</div>
-														<ul className="chat-sources__list">
-															{sources.map((source, sourceIdx) => (
-																<li className="chat-sources__item" key={`${idx}-source-${sourceIdx}`}>
-																	<span className="chat-sources__bullet" />
-																	<div className="chat-sources__content">
-																		{source.url && isSafeUrl(source.url) ? (
-																			<a
-																				href={source.url}
-																				target="_blank"
-																				rel="noreferrer"
-																			>
-																				{source.title}
-																			</a>
-																		) : (
-																			<span>{source.title}</span>
-																		)}
-																		{source.meta && (
-																			<span className="chat-sources__meta">
-																				{' '}
-																				{source.meta}
-																			</span>
-																		)}
-																	</div>
-																</li>
-															))}
-														</ul>
+					<span className="close-icon" />
+				</Button>
+			</WindowHeader>
+			<WindowContent className="app-window__content relative">
+				{showInitializing && (
+					<div className="absolute inset-0 z-10 flex items-center justify-center bg-white/100">
+						<Loader variant="inline" active />
+					</div>
+				)}
+				<ScrollView
+					shadow="true"
+					className="app-window__scroll"
+					ref={scrollRef}
+				>
+					<div className="app-window__scroll-inner">
+						{!showInitializing && (
+							<>
+								{!isLoaded && (
+									<div className="text-left flex items-center gap-2">
+										<Loader variant="inline" active />
+										<span className="text-xs">Loading chat...</span>
+									</div>
+								)}
+								{isLoaded && messages.map((msg, idx) => {
+									const { body, sourcesText } = splitSources(msg.content);
+									const sources = parseSources(sourcesText);
+									return (
+										<ChatMessage
+											key={idx}
+											variant={msg.role === 'user' ? 'user' : 'ai'}
+											content={body}
+										>
+											{sources.length > 0 && (
+												<div className="chat-sources">
+													<div className="chat-sources__header">
+														<span className="chat-sources__badge">Source Log</span>
+														<span className="chat-sources__count">
+															{sources.length} {sources.length === 1 ? 'item' : 'items'}
+														</span>
 													</div>
-												)}
-												{isLoading && idx === messages.length - 1 && msg.role === 'assistant' && !msg.content && (
-													<span className="animate-pulse">...</span>
-												)}
-											</ChatMessage>
-										);
-									})}
-									{isLoading && (
-										<div className="text-left flex items-start gap-2">
-											<span className="text-blue-900 font-[4px]">&gt;</span>
-											<div className="flex items-center gap-2">
-												<Loader variant="inline" active />
-												<span className="text-xs">Thinking...</span>
-											</div>
+													<ul className="chat-sources__list">
+														{sources.map((source, sourceIdx) => (
+															<li className="chat-sources__item" key={`${idx}-source-${sourceIdx}`}>
+																<span className="chat-sources__bullet" />
+																<div className="chat-sources__content">
+																	{source.url && isSafeUrl(source.url) ? (
+																		<a
+																			href={source.url}
+																			target="_blank"
+																			rel="noreferrer"
+																		>
+																			{source.title}
+																		</a>
+																	) : (
+																		<span>{source.title}</span>
+																	)}
+																	{source.meta && (
+																		<span className="chat-sources__meta">
+																			{' '}
+																			{source.meta}
+																		</span>
+																	)}
+																</div>
+															</li>
+														))}
+													</ul>
+												</div>
+											)}
+											{isLoading && idx === messages.length - 1 && msg.role === 'assistant' && !msg.content && (
+												<span className="animate-pulse">...</span>
+											)}
+										</ChatMessage>
+									);
+								})}
+								{isLoading && (
+									<div className="text-left flex items-start gap-2">
+										<span className="text-blue-900 font-[4px]">&gt;</span>
+										<div className="flex items-center gap-2">
+											<Loader variant="inline" active />
+											<span className="text-xs">Thinking...</span>
 										</div>
-									)}
-								</>
-							)}
-						</div>
-					</ScrollView>
-					<div className="app-window__input">
-						<TextInput
-							placeholder="Enter your question here!"
-							className="w-full"
-							value={input}
-							onChange={(e) => setInput(e.target.value)}
-							onKeyDown={handleKeyDown}
-							disabled={isLoading || (rateLimitUntil && Date.now() < rateLimitUntil)}
+									</div>
+								)}
+							</>
+						)}
+					</div>
+				</ScrollView>
+				<div className="app-window__input">
+					<TextInput
+						placeholder="Enter your question here!"
+						className="w-full"
+						value={input}
+						onChange={(e) => setInput(e.target.value)}
+						onKeyDown={handleKeyDown}
+						disabled={isLoading || (rateLimitUntil && Date.now() < rateLimitUntil)}
+					/>
+				</div>
+				<div
+					className="app-window__actions"
+					style={{
+						display: 'flex',
+						flexDirection: 'row',
+						justifyContent: 'space-between',
+						alignItems: 'center',
+						width: '100%',
+					}}
+				>
+					<div className="flex flex-col px-[2px] gap-1">
+						<Radio
+							checked={mode === 'casual'}
+							onChange={handleModeChange}
+							value="casual"
+							label="Casual"
+							name="chat-mode"
+							className="my-0"
+							disabled={isLoading}
+						/>
+						<br />
+						<Radio
+							checked={mode === 'slang'}
+							onChange={handleModeChange}
+							value="slang"
+							label="Slang"
+							name="chat-mode"
+							disabled={isLoading}
 						/>
 					</div>
+
 					<div
-						className="app-window__actions"
 						style={{
 							display: 'flex',
 							flexDirection: 'row',
-							justifyContent: 'space-between',
-							alignItems: 'center',
-							width: '100%',
+							gap: '4px',
 						}}
 					>
-						<div className="flex flex-col px-[2px] gap-1">
-							<Radio
-								checked={mode === 'casual'}
-								onChange={handleModeChange}
-								value="casual"
-								label="Casual"
-								name="chat-mode"
-								className="my-0"
-								disabled={isLoading}
-							/>
-							<br />
-							<Radio
-								checked={mode === 'slang'}
-								onChange={handleModeChange}
-								value="slang"
-								label="Slang"
-								name="chat-mode"
-								disabled={isLoading}
-							/>
-						</div>
-
-						<div
-							style={{
-								display: 'flex',
-								flexDirection: 'row',
-								gap: '4px',
-							}}
+						<Button
+							primary
+							onClick={handleSend}
+							disabled={isLoading || !input.trim() || (rateLimitUntil && Date.now() < rateLimitUntil)}
 						>
-							<Button
-								primary
-								onClick={handleSend}
-								disabled={isLoading || !input.trim() || (rateLimitUntil && Date.now() < rateLimitUntil)}
-							>
-								{isLoading
-									? 'Sending...'
-									: rateLimitUntil && Date.now() < rateLimitUntil
-										? `Wait ${rateLimitRemaining || 1}s`
-										: 'Send'}
-							</Button>
-							<Button onClick={handleClear} disabled={isLoading}>
-								Clear
-							</Button>
-						</div>
+							{isLoading
+								? 'Sending...'
+								: rateLimitUntil && Date.now() < rateLimitUntil
+									? `Wait ${rateLimitRemaining || 1}s`
+									: 'Send'}
+						</Button>
+						<Button onClick={handleClear} disabled={isLoading}>
+							Clear
+						</Button>
 					</div>
-				</WindowContent>
-			</Window>
+				</div>
+			</WindowContent>
+		</Window>
+	);
+
+	if (isDesktopDocked) {
+		return (
+			<div className="w-full max-w-[380px] shrink-0 xl:sticky xl:top-8">
+				{chatWindow}
+			</div>
+		);
+	}
+
+	return (
+		<div className="fixed inset-0 z-50 pointer-events-none">
+			{chatWindow}
 		</div>
 	);
 }

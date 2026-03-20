@@ -98,48 +98,54 @@ function PortfolioContent() {
 		<>
 			<Loader />
 
-			<div className="flex row w-fit mx-auto min-h-screen p-6 sm:p-8 md:p-12 gap-4 md:gap-8">
-				<div
-					className={` flex flex-col gap-12 sm:gap-16 md:gap-[64px] max-w-[550px] mx-auto transition-all duration-700 ${
-						isLoaded
-							? 'opacity-100 translate-y-0'
-							: 'opacity-0 translate-y-8'
-					}`}
-				>
-					<Header />
-					<About />
-					<div
-						className={`flex flex-col gap-4 transition-all duration-700 delay-300 ${
-							isLoaded
-								? 'opacity-100 translate-y-0'
-								: 'opacity-0 translate-y-8'
-						}`}
-					>
-						{projects.map((project) => (
-							<ProjectCard
-								key={project.id}
-								title={project.title}
-								description={project.description}
-								tags={project.tags}
-								items={project.images}
-								repoLink={project.repoLink}
-								demoLink={project.demoLink}
-								isHovered={hoveredProject === project.id}
-								onHover={() =>
-									setHoveredProject(project.id)
-								}
-								onLeave={() => setHoveredProject(null)}
-								imageClassName={
-									project.imageClassName || 'w-64 h-40'
-								}
-							/>
-						))}
+			<div className="min-h-screen px-6 py-6 sm:px-8 sm:py-8 md:px-12 md:py-12">
+				<div className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 xl:flex-row xl:items-start xl:gap-12">
+					<div className="flex min-w-0 flex-1 flex-col gap-8 md:flex-row md:items-start md:gap-8">
+						<div
+							className={`flex flex-col gap-12 sm:gap-16 md:gap-[64px] max-w-[550px] mx-auto md:mx-0 transition-all duration-700 ${
+								isLoaded
+									? 'opacity-100 translate-y-0'
+									: 'opacity-0 translate-y-8'
+							}`}
+						>
+							<Header />
+							<About />
+							<div
+								className={`flex flex-col gap-4 transition-all duration-700 delay-300 ${
+									isLoaded
+										? 'opacity-100 translate-y-0'
+										: 'opacity-0 translate-y-8'
+								}`}
+							>
+								{projects.map((project) => (
+									<ProjectCard
+										key={project.id}
+										title={project.title}
+										description={project.description}
+										tags={project.tags}
+										items={project.images}
+										repoLink={project.repoLink}
+										demoLink={project.demoLink}
+										isHovered={hoveredProject === project.id}
+										onHover={() =>
+											setHoveredProject(project.id)
+										}
+										onLeave={() => setHoveredProject(null)}
+										imageClassName={
+											project.imageClassName || 'w-64 h-40'
+										}
+									/>
+								))}
+							</div>
+						</div>
+
+						<SocialLinks />
 					</div>
+
+					<ChatWindow />
 				</div>
 
 				<ImageModal />
-				<ChatWindow />
-				<SocialLinks />
 
 				{/* Preload images */}
 				<div style={{ display: 'none' }}>
