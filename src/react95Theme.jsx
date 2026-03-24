@@ -85,6 +85,7 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   .app-window__scroll-inner {
+    min-height: 100%;
     padding: 8px;
     font-family: 'W95FA', 'ms_sans_serif', sans-serif;
     font-weight: 100;
@@ -266,6 +267,66 @@ export const GlobalStyles = createGlobalStyle`
 
   .app-window__input input::placeholder {
     line-height: 10px;
+  }
+
+  .app-window__chat-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 6px;
+  }
+
+  .app-window__chat-suggestion {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 9px;
+    border: 1px solid #c0c0c0;
+    background: linear-gradient(180deg, #f8f8f8 0%, #ececec 100%);
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #a0a0a0;
+    color: #111111;
+    font-family: 'W95FA', 'ms_sans_serif', sans-serif;
+    font-weight: 100;
+    font-size: 11px;
+    line-height: 1.25;
+    letter-spacing: 0.3px;
+    opacity: 0.72;
+    cursor: pointer;
+    text-align: left;
+    transition: opacity 120ms ease, transform 120ms ease;
+  }
+
+  .app-window__chat-suggestion:hover,
+  .app-window__chat-suggestion:focus-visible {
+    opacity: 0.96;
+    outline: none;
+  }
+
+  .app-window__chat-suggestion:active {
+    transform: translate(1px, 1px);
+  }
+
+  .app-window__chat-suggestion:disabled {
+    cursor: default;
+    opacity: 0.4;
+    transform: none;
+  }
+
+  .app-window__chat-suggestion-text {
+    flex: 1;
+  }
+
+  .app-window__chat-suggestion-icon {
+    flex-shrink: 0;
+    transition: transform 120ms ease;
+  }
+
+  .app-window__chat-suggestion:hover .app-window__chat-suggestion-icon,
+  .app-window__chat-suggestion:focus-visible .app-window__chat-suggestion-icon {
+    transform: translate(1px, -1px);
   }
 
   .app-window__input [data-testid='variant-default'] {
