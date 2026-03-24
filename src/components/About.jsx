@@ -43,25 +43,24 @@ const About = () => {
 				</p>
 			</div>
 			<p className="text-[11px] sm:text-[12px] font-normal text-text-muted leading-normal">
-				Student @ Waterloo by trade, Full Stack Dev by
-				passion. I love to build{' '}
+				Sparsh is a Waterloo student who likes building{' '}
 				<span
 					className="relative inline-flex items-center gap-1 cursor-pointer group/confetti transition-all duration-300"
 					onMouseEnter={triggerConfetti}
 					onClick={triggerConfetti}
 				>
 					<span className="underline decoration-wavy decoration-accent/50 group-hover/confetti:decoration-accent transition-all hover:text-accent">
-						cool stuff
+						thoughtful products
 					</span>
 				</span>{' '}
-				with technology. Feel free to{' '}
+				at the intersection of design, engineering, and curiosity. Reach out{' '}
 				<a
 					href="mailto:ss6shah@uwaterloo.ca"
 					className="hover:text-primary transition-colors"
 				>
-					reach out
+					here
 				</a>{' '}
-				if you want to chat or collaborate!
+				if you want to talk shop, swap ideas, or build something interesting.
 			</p>
 		</div>
 	);
