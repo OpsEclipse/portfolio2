@@ -399,4 +399,68 @@ export const GlobalStyles = createGlobalStyle`
     right: 2px;
   }
 
+  /* ── Shimmer loading bars ── */
+
+  @keyframes chat-shimmer {
+    0%   { background-position: -300px 0; }
+    100% { background-position: 300px 0; }
+  }
+
+  .chat-thinking-shimmer {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 1px 0;
+    min-width: 120px;
+  }
+
+  .chat-thinking-shimmer__bar {
+    height: 10px;
+    border: 1px solid #cacaca;
+    background: linear-gradient(
+      90deg,
+      #e0e0e0 0px,
+      #efefef 80px,
+      #fafafa 120px,
+      #efefef 160px,
+      #e0e0e0 240px
+    );
+    background-size: 400px 10px;
+    animation: chat-shimmer 1.4s linear infinite;
+    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #b0b0b0;
+  }
+
+  .chat-thinking-shimmer__bar--short {
+    width: 65%;
+  }
+
+  /* ── Auto-height floating window ── */
+
+  .app-window--auto-height {
+    height: auto !important;
+  }
+
+  .app-window--auto-height .app-window__content {
+    height: auto !important;
+  }
+
+  .app-window--auto-height .app-window__scroll {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 80px;
+    max-height: min(450px, calc(100vh - 220px));
+    overflow: hidden;
+  }
+
+  .app-window--auto-height .app-window__scroll > div {
+    height: auto !important;
+    min-height: 80px;
+    max-height: min(450px, calc(100vh - 220px));
+    overflow-y: auto;
+  }
+
+  .app-window--auto-height .app-window__scroll-inner {
+    min-height: 0 !important;
+  }
+
 `

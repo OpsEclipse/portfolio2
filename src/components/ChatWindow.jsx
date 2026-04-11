@@ -167,6 +167,7 @@ function ChatWindow() {
 	const [hasSubmittedUserMessage, setHasSubmittedUserMessage] = useState(false);
 	const hasInitializedResponsive = useRef(false);
 	const hasRequestedGreeting = useRef(false);
+	const hasUserSetHeightRef = useRef(false);
 	const isDesktopDocked = viewportWidth >= DESKTOP_DOCK_BREAKPOINT;
 	const isRateLimited = Boolean(rateLimitUntil && Date.now() < rateLimitUntil);
 	const showSuggestions =
@@ -341,11 +342,22 @@ function ChatWindow() {
 				const handle = event.currentTarget;
 				handle.setPointerCapture(event.pointerId);
 
+				// On first resize, capture the actual rendered height (auto-height mode)
+				let initialHeight = sizeRef.current.height;
+				if (!hasUserSetHeightRef.current) {
+					const rect = windowRef.current?.getBoundingClientRect();
+					if (rect?.height) {
+						initialHeight = rect.height;
+						sizeRef.current = { ...sizeRef.current, height: initialHeight };
+					}
+					hasUserSetHeightRef.current = true;
+				}
+
 				const start = {
 					x: event.clientX,
 					y: event.clientY,
 					width: sizeRef.current.width,
-					height: sizeRef.current.height,
+					height: initialHeight,
 				};
 
 				const onPointerMove = (moveEvent) => {
@@ -391,21 +403,21 @@ function ChatWindow() {
 		};
 	}, []);
 
-	const handleHeaderPointerDown = (event) => {
+	const handleHeaderPointerDown = useCallback((event) => {
 		if (event.button !== 0) return;
 		if (event.target.closest('button')) return;
 		event.preventDefault();
+		event.currentTarget.setPointerCapture(event.pointerId);
 
-		const start = {
-			x: event.clientX,
-			y: event.clientY,
-			startX: position.x,
-			startY: position.y,
-		};
+		const startClientX = event.clientX;
+		const startClientY = event.clientY;
+		const startX = positionRef.current.x;
+		const startY = positionRef.current.y;
 
 		const onPointerMove = (moveEvent) => {
-			const nextX = start.startX + (moveEvent.clientX - start.x);
-			const nextY = start.startY + (moveEvent.clientY - start.y);
+			const nextX = startX + (moveEvent.clientX - startClientX);
+			const nextY = startY + (moveEvent.clientY - startClientY);
+			positionRef.current = { x: nextX, y: nextY };
 			setPosition({ x: nextX, y: nextY });
 		};
 
@@ -419,7 +431,7 @@ function ChatWindow() {
 		window.addEventListener('pointermove', onPointerMove);
 		window.addEventListener('pointerup', onPointerUp);
 		window.addEventListener('pointercancel', onPointerUp);
-	};
+	}, [clampToViewport]);
 
 	const streamAssistantResponse = useCallback(
 		async ({
@@ -728,7 +740,7 @@ function ChatWindow() {
 			resizeRef={isDesktopDocked ? undefined : setResizeHandleRef}
 			className={`app-window pointer-events-auto transition-opacity transition-transform duration-700 animate-maximize-in ${
 				isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-			}`}
+			} ${!isDesktopDocked && !hasUserSetHeightRef.current ? 'app-window--auto-height' : ''}`}
 			ref={windowRef}
 			style={
 				isDesktopDocked
@@ -741,7 +753,7 @@ function ChatWindow() {
 							left: position.x,
 							top: position.y,
 							width: size.width,
-							height: size.height,
+							...(hasUserSetHeightRef.current ? { height: size.height } : {}),
 					  }
 			}
 		>
