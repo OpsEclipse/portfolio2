@@ -12,6 +12,12 @@ import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right.js';
 import ChatMessage from './ChatMessage';
 import Loader from './Loader';
 import { usePortfolio } from '../context/PortfolioContext';
+import {
+	applyChatEventToMessages,
+	parseSseChunk,
+	shouldShowChatEmptyState,
+	shouldShowChatSuggestions,
+} from '../lib/chat/chatWindowState.js';
 
 const MIN_WIDTH = 280;
 const MIN_HEIGHT = 320;
@@ -30,9 +36,6 @@ const CHAT_SUGGESTIONS = [
 	"what's the coolest thing sparsh has built?",
 	'how does this RAG thing actually work?',
 ];
-
-const GREETING_LOCATION = 'Oakville, Ontario, Canada';
-const GREETING_TIMEZONE = 'America/Toronto';
 
 const SAFE_URL_REGEX = /^https?:\/\/|^mailto:/;
 
@@ -56,69 +59,6 @@ function splitSources(content = '') {
 		body: content.slice(0, idx).trim(),
 		sourcesText: content.slice(idx + marker.length, sourcesEnd).trim(),
 	};
-}
-
-function getDayOfYear(year, month, day) {
-	const start = Date.UTC(year, 0, 1);
-	const current = Date.UTC(year, month - 1, day);
-	return Math.floor((current - start) / 86400000) + 1;
-}
-
-function getSeason(month) {
-	if (month === 12 || month <= 2) return 'winter';
-	if (month <= 5) return 'spring';
-	if (month <= 8) return 'summer';
-	return 'fall';
-}
-
-function buildGreetingContext() {
-	const now = new Date();
-	const dateKey = new Intl.DateTimeFormat('en-CA', {
-		timeZone: GREETING_TIMEZONE,
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-	}).format(now);
-	const [year, month, day] = dateKey.split('-').map(Number);
-	const dayOfYear = getDayOfYear(year, month, day);
-	const season = getSeason(month);
-	const dateLong = new Intl.DateTimeFormat('en-US', {
-		timeZone: GREETING_TIMEZONE,
-		weekday: 'long',
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric',
-	}).format(now);
-	const dayOfWeek = new Intl.DateTimeFormat('en-US', {
-		timeZone: GREETING_TIMEZONE,
-		weekday: 'long',
-	}).format(now);
-	const timeShort = new Intl.DateTimeFormat('en-US', {
-		timeZone: GREETING_TIMEZONE,
-		hour: 'numeric',
-		minute: '2-digit',
-		hour12: true,
-		timeZoneName: 'short',
-	}).format(now);
-	const timeZoneLong =
-		new Intl.DateTimeFormat('en-US', {
-			timeZone: GREETING_TIMEZONE,
-			hour: 'numeric',
-			timeZoneName: 'long',
-		})
-			.formatToParts(now)
-			.find((part) => part.type === 'timeZoneName')?.value || 'Eastern Time';
-
-	return [
-		`App summary: Sparsh's portfolio and chat navigator.`,
-		`Sparsh location: ${GREETING_LOCATION}`,
-		`Local date: ${dateLong}`,
-		`Day of week: ${dayOfWeek}`,
-		`Local time: ${timeShort}`,
-		`Time zone: ${timeZoneLong}`,
-		`Day of year: ${dayOfYear}`,
-		`Season: ${season}`,
-	].join('\n');
 }
 
 function parseSources(sourcesText = '') {
@@ -161,18 +101,26 @@ function ChatWindow() {
 	const [showInitializing, setShowInitializing] = useState(true);
 	const { isLoaded } = usePortfolio();
 	const scrollRafRef = useRef(0);
+	const sseBufferRef = useRef('');
 	const [isMinimized, setIsMinimized] = useState(false);
+	const [clearingIndices, setClearingIndices] = useState(new Set());
+	const clearTimeoutsRef = useRef([]);
 	const [iconPosition, setIconPosition] = useState({ x: 0, y: 0 });
 	const iconPositionRef = useRef({ x: 0, y: 0 });
 	const [hasSubmittedUserMessage, setHasSubmittedUserMessage] = useState(false);
 	const hasInitializedResponsive = useRef(false);
-	const hasRequestedGreeting = useRef(false);
 	const hasUserSetHeightRef = useRef(false);
 	const isDesktopDocked = viewportWidth >= DESKTOP_DOCK_BREAKPOINT;
 	const isRateLimited = Boolean(rateLimitUntil && Date.now() < rateLimitUntil);
-	const showSuggestions =
-		!hasSubmittedUserMessage &&
-		!messages.some((message) => message.role === 'user');
+	const showEmptyState = shouldShowChatEmptyState({
+		isLoaded,
+		showInitializing,
+		messages,
+	});
+	const showSuggestions = shouldShowChatSuggestions({
+		hasSubmittedUserMessage,
+		messages,
+	});
 
 	const handleModeChange = (event) => {
 		setMode(event.target.value);
@@ -200,6 +148,12 @@ function ChatWindow() {
 	useEffect(() => {
 		return () => {
 			if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+		};
+	}, []);
+
+	useEffect(() => {
+		return () => {
+			clearTimeoutsRef.current.forEach((t) => window.clearTimeout(t));
 		};
 	}, []);
 
@@ -511,46 +465,35 @@ function ChatWindow() {
 
 				const reader = response.body.getReader();
 				const decoder = new TextDecoder();
+				sseBufferRef.current = '';
 
 				while (true) {
 					const { done, value } = await reader.read();
 					if (done) break;
 
 					const chunk = decoder.decode(value);
-					const lines = chunk.split('\n');
+					const { events, remainder } = parseSseChunk(
+						sseBufferRef.current,
+						chunk
+					);
+					sseBufferRef.current = remainder;
 
-					for (const line of lines) {
-						if (line.startsWith('data: ')) {
-							const data = line.slice(6);
-							if (data === '[DONE]') continue;
-
-							try {
-								const parsed = JSON.parse(data);
-								if (parsed.content) {
-									setMessages((prev) => {
-										const updated = [...prev];
-										const lastIdx = updated.length - 1;
-										if (updated[lastIdx]?.role === 'assistant') {
-											updated[lastIdx] = {
-												...updated[lastIdx],
-												content: updated[lastIdx].content + parsed.content,
-											};
-										}
-										return updated;
-									});
-								}
-								if (parsed.error) {
-									const detail = parsed.detail ? ` (${parsed.detail})` : '';
-									console.error(`Stream error: ${parsed.error}${detail}`);
-								}
-							} catch {
-								// Ignore JSON parse errors for incomplete chunks
-							}
+					for (const parsed of events) {
+						if (parsed.type === 'status' || parsed.type === 'content') {
+							setMessages((prev) =>
+								applyChatEventToMessages(prev, parsed)
+							);
+						}
+						if (parsed.error) {
+							const detail = parsed.detail ? ` (${parsed.detail})` : '';
+							console.error(`Stream error: ${parsed.error}${detail}`);
 						}
 					}
 				}
+				sseBufferRef.current = '';
 			} catch (error) {
 				console.error('Chat error:', error);
+				sseBufferRef.current = '';
 				setMessages((prev) => [
 					...prev,
 					{
@@ -564,29 +507,6 @@ function ChatWindow() {
 		},
 		[isLoading, mode, rateLimitRemaining, rateLimitUntil]
 	);
-
-	const requestGreeting = useCallback(
-		({ force = false, reset = false } = {}) => {
-			if (isLoading) return;
-			if (hasRequestedGreeting.current && !force) return;
-			hasRequestedGreeting.current = true;
-			const userMessage = { role: 'user', content: buildGreetingContext() };
-			streamAssistantResponse({
-				userMessage,
-				includeUserMessage: false,
-				intent: 'greeting',
-				modeOverride: 'casual',
-				resetMessages: reset,
-			});
-		},
-		[isLoading, streamAssistantResponse]
-	);
-
-	useEffect(() => {
-		if (!isLoaded || showInitializing) return;
-		if (messages.length > 0) return;
-		requestGreeting();
-	}, [isLoaded, messages.length, requestGreeting, showInitializing]);
 
 	const handleSend = () => {
 		if (!input.trim() || isLoading) return;
@@ -605,8 +525,34 @@ function ChatWindow() {
 
 	const handleClear = () => {
 		setInput('');
-		hasRequestedGreeting.current = false;
-		requestGreeting({ force: true, reset: true });
+		if (messages.length === 0) return;
+
+		// Cancel any in-flight clear animation
+		clearTimeoutsRef.current.forEach((t) => window.clearTimeout(t));
+		clearTimeoutsRef.current = [];
+		setClearingIndices(new Set());
+
+		const STAGGER_MS = 70;
+		const ANIM_DURATION_MS = 240;
+
+		// Trigger clearing animation from bottom to top
+		messages.forEach((_, i) => {
+			const reverseIdx = messages.length - 1 - i;
+			const t = window.setTimeout(() => {
+				setClearingIndices((prev) => new Set([...prev, reverseIdx]));
+			}, i * STAGGER_MS);
+			clearTimeoutsRef.current.push(t);
+		});
+
+		// After animation completes, clear messages
+		const totalMs = (messages.length - 1) * STAGGER_MS + ANIM_DURATION_MS + 50;
+		const finalT = window.setTimeout(() => {
+			setMessages([]);
+			setHasSubmittedUserMessage(false);
+			setClearingIndices(new Set());
+			clearTimeoutsRef.current = [];
+		}, totalMs);
+		clearTimeoutsRef.current.push(finalT);
 	};
 
 	const handleMinimize = () => {
@@ -791,89 +737,127 @@ function ChatWindow() {
 										<span className="text-xs">Loading chat...</span>
 									</div>
 								)}
-								{isLoaded && messages.map((msg, idx) => {
-									const { body, sourcesText } = splitSources(msg.content);
-									const sources = parseSources(sourcesText);
-									return (
-										<ChatMessage
-											key={idx}
-											variant={msg.role === 'user' ? 'user' : 'ai'}
-											content={body}
-										>
-											{sources.length > 0 && (
-												<div className="chat-sources">
-													<div className="chat-sources__header">
-														<span className="chat-sources__badge">Source Log</span>
-														<span className="chat-sources__count">
-															{sources.length} {sources.length === 1 ? 'item' : 'items'}
-														</span>
-													</div>
-													<ul className="chat-sources__list">
-														{sources.map((source, sourceIdx) => (
-															<li className="chat-sources__item" key={`${idx}-source-${sourceIdx}`}>
-																<span className="chat-sources__bullet" />
-																<div className="chat-sources__content">
-																	{source.url && isSafeUrl(source.url) ? (
-																		<a
-																			href={source.url}
-																			target="_blank"
-																			rel="noreferrer"
-																		>
-																			{source.title}
-																		</a>
-																	) : (
-																		<span>{source.title}</span>
-																	)}
-																	{source.meta && (
-																		<span className="chat-sources__meta">
-																			{' '}
-																			{source.meta}
-																		</span>
-																	)}
-																</div>
-															</li>
-														))}
-													</ul>
-												</div>
-											)}
-											{isLoading && idx === messages.length - 1 && msg.role === 'assistant' && !msg.content && (
-												<span className="animate-pulse">...</span>
-											)}
-										</ChatMessage>
-									);
-								})}
-								{showSuggestions && (
-									<div
-										className="app-window__chat-suggestions"
-										aria-label="Suggested questions"
-									>
-										{CHAT_SUGGESTIONS.map((suggestion) => (
-											<button
-												key={suggestion}
-												type="button"
-												className="app-window__chat-suggestion group"
-												onClick={() => handleSuggestionClick(suggestion)}
-												disabled={isLoading || isRateLimited}
-											>
-												<span className="app-window__chat-suggestion-text">
-													{suggestion}
-												</span>
-												<ArrowUpRight
-													size={16}
-													className="app-window__chat-suggestion-icon"
-												/>
-											</button>
-										))}
-									</div>
-								)}
-								{isLoading && (
-									<div className="text-left flex items-start gap-2">
-										<span className="text-blue-900 font-[4px]">&gt;</span>
-										<div className="flex items-center gap-2">
-											<Loader variant="inline" active />
-											<span className="text-xs">Thinking...</span>
+								{showEmptyState ? (
+									<div className="flex flex-1 flex-col py-6">
+										<div className="flex flex-1 items-center justify-center text-center">
+											<span className="text-xs text-neutral-700">
+												Ask me anything about Sparsh
+											</span>
 										</div>
+										{showSuggestions && (
+											<div
+												className="app-window__chat-suggestions"
+												aria-label="Suggested questions"
+											>
+												{CHAT_SUGGESTIONS.map((suggestion) => (
+													<button
+														key={suggestion}
+														type="button"
+														className="app-window__chat-suggestion group"
+														onClick={() => handleSuggestionClick(suggestion)}
+														disabled={isLoading || isRateLimited}
+													>
+														<span className="app-window__chat-suggestion-text">
+															{suggestion}
+														</span>
+														<ArrowUpRight
+															size={16}
+															className="app-window__chat-suggestion-icon"
+														/>
+													</button>
+												))}
+											</div>
+										)}
 									</div>
+								) : (
+									<>
+										{isLoaded && messages.map((msg, idx) => {
+											const { body, sourcesText } = splitSources(msg.content);
+											const sources = parseSources(sourcesText);
+											return (
+												<div
+													key={idx}
+													className={clearingIndices.has(idx) ? 'chat-message--clearing' : undefined}
+												>
+												<ChatMessage
+													variant={msg.role === 'user' ? 'user' : 'ai'}
+													content={body}
+													statusLabel={msg.role === 'assistant' ? msg.statusLabel : ''}
+												>
+													{sources.length > 0 && (
+														<div className="chat-sources">
+															<div className="chat-sources__header">
+																<span className="chat-sources__badge">Source Log</span>
+																<span className="chat-sources__count">
+																	{sources.length} {sources.length === 1 ? 'item' : 'items'}
+																</span>
+															</div>
+															<ul className="chat-sources__list">
+																{sources.map((source, sourceIdx) => (
+																	<li className="chat-sources__item" key={`${idx}-source-${sourceIdx}`}>
+																		<span className="chat-sources__bullet" />
+																		<div className="chat-sources__content">
+																			{source.url && isSafeUrl(source.url) ? (
+																				<a
+																					href={source.url}
+																					target="_blank"
+																					rel="noreferrer"
+																				>
+																					{source.title}
+																				</a>
+																			) : (
+																				<span>{source.title}</span>
+																			)}
+																			{source.meta && (
+																				<span className="chat-sources__meta">
+																					{' '}
+																					{source.meta}
+																				</span>
+																			)}
+																		</div>
+																	</li>
+																))}
+															</ul>
+														</div>
+													)}
+													{isLoading && idx === messages.length - 1 && msg.role === 'assistant' && !msg.content && (
+														<span className="animate-pulse">...</span>
+													)}
+												</ChatMessage>
+											</div>
+											);
+										})}
+										{showSuggestions && (
+											<div
+												className="app-window__chat-suggestions"
+												aria-label="Suggested questions"
+											>
+												{CHAT_SUGGESTIONS.map((suggestion) => (
+													<button
+														key={suggestion}
+														type="button"
+														className="app-window__chat-suggestion group"
+														onClick={() => handleSuggestionClick(suggestion)}
+														disabled={isLoading || isRateLimited}
+													>
+														<span className="app-window__chat-suggestion-text">
+															{suggestion}
+														</span>
+														<ArrowUpRight
+															size={16}
+															className="app-window__chat-suggestion-icon"
+														/>
+													</button>
+												))}
+											</div>
+										)}
+										{isLoading && (
+											<div className="text-left flex items-start gap-2">
+												<span className="text-blue-900 font-[4px]">&gt;</span>
+												<span className="thinking-shimmer text-xs font-medium">Thinking...</span>
+											</div>
+										)}
+									</>
 								)}
 							</>
 						)}
@@ -938,7 +922,7 @@ function ChatWindow() {
 									? `Wait ${rateLimitRemaining || 1}s`
 									: 'Send'}
 						</Button>
-						<Button onClick={handleClear} disabled={isLoading}>
+						<Button onClick={handleClear} disabled={isLoading || clearingIndices.size > 0}>
 							Clear
 						</Button>
 					</div>

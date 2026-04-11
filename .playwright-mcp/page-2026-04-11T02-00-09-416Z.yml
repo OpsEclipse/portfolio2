@@ -1,0 +1,159 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]:
+            - generic [ref=e8]:
+              - heading "Sparsh Shah" [level=2] [ref=e9]
+              - generic [ref=e10]: "18"
+            - generic [ref=e11]:
+              - img "Song Title by Artist Name" [ref=e14] [cursor=pointer]
+              - img "Song Title by Artist Name" [ref=e17] [cursor=pointer]
+              - img "Song Title by Artist Name" [ref=e20] [cursor=pointer]
+              - img "Song Title by Artist Name" [ref=e23] [cursor=pointer]
+              - img "Song Title by Artist Name" [ref=e26] [cursor=pointer]
+              - generic:
+                - generic:
+                  - img
+                  - generic:
+                    - paragraph: Song Title
+                    - paragraph: Artist Name
+          - generic [ref=e28]:
+            - paragraph [ref=e30]: Waterloo, Canada
+            - paragraph [ref=e32]: Seeking co-op fall 2026
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - paragraph [ref=e36]: First-year student at the university of Waterloo
+            - paragraph [ref=e37]: Studying Systems Design Engineering
+          - paragraph [ref=e38]:
+            - text: Sparsh is a Waterloo student who likes building
+            - generic [ref=e40] [cursor=pointer]: thoughtful products
+            - text: at the intersection of design, engineering, and curiosity. Reach out
+            - link "here" [ref=e41] [cursor=pointer]:
+              - /url: mailto:ss6shah@uwaterloo.ca
+            - text: if you want to talk shop, swap ideas, or build something interesting.
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - generic [ref=e44]:
+              - link "Vaultify" [ref=e46] [cursor=pointer]:
+                - /url: https://github.com/OpsEclipse/vaultify-frontend
+                - heading "Vaultify" [level=2] [ref=e47]
+                - img [ref=e48]
+              - link "Demo Video" [ref=e51] [cursor=pointer]:
+                - /url: https://www.youtube.com/watch?v=mCXQQ_RFFjw
+            - generic [ref=e52]:
+              - paragraph [ref=e53]: Was too broke for Spotify premium, so made it myself.
+              - generic [ref=e54]:
+                - paragraph [ref=e56]: ExpressJS
+                - paragraph [ref=e58]: ReactJS
+                - paragraph [ref=e60]: MongoDB
+                - paragraph [ref=e62]: AWS
+              - generic [ref=e63]:
+                - generic [ref=e64]:
+                  - img "Vaultify screenshot 1" [ref=e67] [cursor=pointer]
+                  - img "Vaultify screenshot 2" [ref=e71] [cursor=pointer]
+                  - img "Vaultify screenshot 3" [ref=e75] [cursor=pointer]
+                - button "Scroll right" [ref=e77] [cursor=pointer]:
+                  - img [ref=e78]
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - link "AI-Powered Study Habit Tracker" [ref=e83] [cursor=pointer]:
+                - /url: https://github.com/Ishan8840/StudyBuddy
+                - heading "AI-Powered Study Habit Tracker" [level=2] [ref=e84]
+                - img [ref=e85]
+              - link "Demo Video" [ref=e88] [cursor=pointer]:
+                - /url: https://www.youtube.com/watch?v=swpcKQaMguY
+            - generic [ref=e89]:
+              - paragraph [ref=e90]: Built an AI-driven study habit tracker using MediaPipe for real-time face and hand detection to monitor focus, distractions, and face-touching behavior
+              - generic [ref=e91]:
+                - paragraph [ref=e93]: FastApi
+                - paragraph [ref=e95]: ReactJS
+                - paragraph [ref=e97]: MongoDB
+                - paragraph [ref=e99]: Redis
+                - paragraph [ref=e101]: MediaPipe
+              - generic [ref=e102]:
+                - generic [ref=e103]:
+                  - img "AI-Powered Study Habit Tracker screenshot 1" [ref=e106] [cursor=pointer]
+                  - img "AI-Powered Study Habit Tracker screenshot 2" [ref=e110] [cursor=pointer]
+                  - img "AI-Powered Study Habit Tracker screenshot 3" [ref=e114] [cursor=pointer]
+                  - img "AI-Powered Study Habit Tracker screenshot 4" [ref=e118] [cursor=pointer]
+                  - img "AI-Powered Study Habit Tracker screenshot 5" [ref=e122] [cursor=pointer]
+                - button "Scroll right" [ref=e124] [cursor=pointer]:
+                  - img [ref=e125]
+          - generic [ref=e127]:
+            - link "Global Task Manager" [ref=e130] [cursor=pointer]:
+              - /url: https://to-do-react-1.onrender.com/##/login
+              - heading "Global Task Manager" [level=2] [ref=e131]
+              - img [ref=e132]
+            - generic [ref=e135]:
+              - paragraph [ref=e136]: A globally accessible, shared task list where users can add, remove, and mark tasks aswell as a clean, responsive UI for usability across devices.
+              - generic [ref=e137]:
+                - paragraph [ref=e139]: ExpressJS
+                - paragraph [ref=e141]: ReactJS
+                - paragraph [ref=e143]: MongoDB
+                - paragraph [ref=e145]: Socket.io
+              - generic [ref=e146]:
+                - generic [ref=e147]:
+                  - img "Global Task Manager screenshot 1" [ref=e150] [cursor=pointer]
+                  - img "Global Task Manager screenshot 2" [ref=e154] [cursor=pointer]
+                  - img "Global Task Manager screenshot 3" [ref=e158] [cursor=pointer]
+                - button "Scroll right" [ref=e160] [cursor=pointer]:
+                  - img [ref=e161]
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - link "ChatKey" [ref=e166] [cursor=pointer]:
+                - /url: https://github.com/OpsEclipse/ChatKey
+                - heading "ChatKey" [level=2] [ref=e167]
+                - img [ref=e168]
+              - link "Demo Video" [ref=e171] [cursor=pointer]:
+                - /url: https://www.youtube.com/shorts/DRrh8PuZnFk
+            - generic [ref=e172]:
+              - paragraph [ref=e173]: Built a lightweight cross-platform messaging application using React Native, supporting iOS and Android with seamless native performance
+              - generic [ref=e174]:
+                - paragraph [ref=e176]: React native
+                - paragraph [ref=e178]: Expo
+                - paragraph [ref=e180]: Firebase Auth
+                - paragraph [ref=e182]: Firestore
+                - paragraph [ref=e184]: NativeWind
+              - generic [ref=e186]:
+                - img "ChatKey screenshot 1" [ref=e189] [cursor=pointer]
+                - img "ChatKey screenshot 2" [ref=e193] [cursor=pointer]
+                - img "ChatKey screenshot 3" [ref=e197] [cursor=pointer]
+                - img "ChatKey screenshot 4" [ref=e201] [cursor=pointer]
+      - generic [ref=e203]:
+        - link "Linkedin" [ref=e204] [cursor=pointer]:
+          - /url: https://www.linkedin.com/in/sprsh/
+          - paragraph [ref=e205]: Linkedin
+          - img [ref=e206]
+        - link "Github" [ref=e209] [cursor=pointer]:
+          - /url: https://github.com/OpsEclipse
+          - paragraph [ref=e210]: Github
+          - img [ref=e211]
+        - link "Email" [ref=e214] [cursor=pointer]:
+          - /url: mailto:ss6shah@uwaterloo.ca
+          - paragraph [ref=e215]: Email
+          - img [ref=e216]
+        - link "Resume" [ref=e219] [cursor=pointer]:
+          - /url: /resume.pdf
+          - paragraph [ref=e220]: Resume
+          - img [ref=e221]
+    - generic [ref=e224]:
+      - button [ref=e226] [cursor=pointer]
+      - generic [ref=e228]:
+        - generic "Loading" [ref=e230]
+        - textbox "Enter your question here!" [ref=e237]
+        - generic [ref=e238]:
+          - generic [ref=e239]:
+            - generic [ref=e240] [cursor=pointer]:
+              - radio "Casual" [checked] [ref=e242]
+              - generic [ref=e243]: Casual
+            - generic [ref=e244] [cursor=pointer]:
+              - radio "Slang" [ref=e245]
+              - generic [ref=e246]: Slang
+          - generic [ref=e247]:
+            - button "Send" [disabled] [ref=e248]
+            - button "Clear" [ref=e249] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e256] [cursor=pointer]:
+    - img [ref=e257]
+  - alert [ref=e260]

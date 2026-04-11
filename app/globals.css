@@ -125,6 +125,42 @@ body {
 	text-orientation: mixed;
 }
 
+/* Thinking shimmer animation */
+@keyframes thinking-shimmer {
+	0%   { background-position: -200% center; }
+	100% { background-position:  200% center; }
+}
+
+.thinking-shimmer {
+	background: linear-gradient(
+		90deg,
+		#1a1a1a 0%,
+		#1a1a1a 30%,
+		#888 50%,
+		#1a1a1a 70%,
+		#1a1a1a 100%
+	);
+	background-size: 200% auto;
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+	animation: thinking-shimmer 1.6s linear infinite;
+}
+
+/* Retro chat clear animation */
+@keyframes retro-clear-line {
+	0%   { opacity: 1; filter: none; }
+	18%  { opacity: 1; filter: invert(1) brightness(8); }
+	42%  { opacity: 0; filter: none; }
+	100% { opacity: 0; }
+}
+
+.chat-message--clearing {
+	animation: retro-clear-line 0.24s ease-in forwards;
+	pointer-events: none;
+}
+
 /* Chat Window Animations */
 @keyframes maximize-in {
 	from {

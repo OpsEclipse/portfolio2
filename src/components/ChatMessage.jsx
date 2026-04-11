@@ -196,13 +196,16 @@ function renderMarkdown(content) {
 	return nodes;
 }
 
-function ChatMessage({ variant = 'ai', content = '', children }) {
+function ChatMessage({ variant = 'ai', content = '', statusLabel = '', children }) {
 	const style = MESSAGE_STYLES[variant] ?? MESSAGE_STYLES.ai;
 
 	return (
 		<div className={style.container}>
 			<span className={style.prefixClass}>{style.prefix}</span>
 			<div className="chat-message__content">
+				{statusLabel && (
+					<div className="mb-1 text-xs text-neutral-700">{statusLabel}</div>
+				)}
 				{renderMarkdown(content)}
 				{children}
 			</div>

@@ -399,39 +399,32 @@ export const GlobalStyles = createGlobalStyle`
     right: 2px;
   }
 
-  /* ── Shimmer loading bars ── */
+  /* ── Shimmer loading text ── */
 
-  @keyframes chat-shimmer {
-    0%   { background-position: -300px 0; }
-    100% { background-position: 300px 0; }
+  @keyframes text-shimmer {
+    0%   { background-position: -200px 0; }
+    100% { background-position: 200px 0; }
   }
 
-  .chat-thinking-shimmer {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    padding: 1px 0;
-    min-width: 120px;
-  }
-
-  .chat-thinking-shimmer__bar {
-    height: 10px;
-    border: 1px solid #cacaca;
+  .chat-thinking-text {
     background: linear-gradient(
       90deg,
-      #e0e0e0 0px,
-      #efefef 80px,
-      #fafafa 120px,
-      #efefef 160px,
-      #e0e0e0 240px
+      #666 0%,
+      #999 30%,
+      #eee 50%,
+      #999 70%,
+      #666 100%
     );
-    background-size: 400px 10px;
-    animation: chat-shimmer 1.4s linear infinite;
-    box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #b0b0b0;
-  }
-
-  .chat-thinking-shimmer__bar--short {
-    width: 65%;
+    background-size: 300px 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: text-shimmer 1.6s ease-in-out infinite;
+    font-family: 'W95FA', 'ms_sans_serif', sans-serif;
+    font-weight: 100;
+    font-size: 12px;
+    letter-spacing: 0.3px;
   }
 
   /* ── Auto-height floating window ── */

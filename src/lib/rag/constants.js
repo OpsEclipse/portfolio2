@@ -5,6 +5,7 @@ export const NAMESPACES = {
 };
 
 export const MODELS = {
+	CHAT: 'claude-sonnet-4-20250514',
 	// Groq (primary) - verified March 10, 2026
 	GATEKEEPER_FALLBACK: 'meta-llama/llama-4-scout-17b-16e-instruct',
 	GENERATOR_FALLBACK: 'openai/gpt-oss-120b',
