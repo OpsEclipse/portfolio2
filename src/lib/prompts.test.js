@@ -12,17 +12,32 @@ test('getSystemPrompt instructs the model to use the retrieval tool for portfoli
 		const prompt = getSystemPrompt(mode);
 
 		assert.match(prompt, /searchPortfolioContext/);
-		assert.match(prompt, /personal: interests, hobbies, background, values, public milestones/i);
-		assert.match(prompt, /portfolio facts should come from retrieved context/i);
-		assert.match(prompt, /if a portfolio-specific claim does not have retrieved context, say it is not verified in the database/i);
-		assert.match(prompt, /only use conversation-established facts or injected legacy context when they are actually present/i);
-		assert.match(prompt, /contact info or personal identifiers/i);
-		assert.match(prompt, /if retrieved context or the injected legacy context contains the detail, it can be used/i);
-		assert.match(prompt, /answer normally first/i);
-		assert.match(prompt, /do not output only the footer/i);
-		assert.match(prompt, /the footer must be exactly: `<<used_sources>>`/i);
-		assert.match(prompt, /one chunk id per line/i);
-		assert.match(prompt, /then `<<\/used_sources>>`/i);
+		assert.match(
+			prompt,
+			/professional: work history, education, skills, projects, contact info -> rag only/i
+		);
+		assert.match(
+			prompt,
+			/system: how this site and retrieval works -> rag only/i
+		);
+		assert.match(
+			prompt,
+			/retrieved context is the source of truth\. never guess or infer portfolio facts/i
+		);
+		assert.match(
+			prompt,
+			/that detail isn't verified in\s+my database/i
+		);
+		assert.match(
+			prompt,
+			/only share contact info .* if it appears\s+in retrieved or injected context/i
+		);
+		assert.match(prompt, /do not suggest external sources/i);
+		assert.match(prompt, /after every answer, append this footer exactly/i);
+		assert.match(prompt, /the footer must follow answer text, never appear alone/i);
+		assert.match(prompt, /`<<used_sources>>`/i);
+		assert.match(prompt, /chunk id per line, or "none" if no retrieval was used/i);
+		assert.match(prompt, /`<<\/used_sources>>`/i);
 	}
 });
 
@@ -48,11 +63,11 @@ test('getSystemPrompt keeps no-context portfolio claims unverified instead of fa
 
 	assert.match(
 		prompt,
-		/portfolio-specific claim does not have retrieved context/i
+		/if no retrieved context exists for a claim/i
 	);
 	assert.match(
 		prompt,
-		/not verified in the database rather than guessing/i
+		/that detail isn't verified in\s+my database/i
 	);
 	assert.doesNotMatch(prompt, /answer from verified knowledge only/i);
 });
