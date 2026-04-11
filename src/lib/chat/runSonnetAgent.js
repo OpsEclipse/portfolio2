@@ -1,7 +1,10 @@
-import { anthropic } from '@ai-sdk/anthropic';
 import { stepCountIs, streamText, tool } from 'ai';
 import { z } from 'zod';
 
+import {
+	createAnthropicCachedSystemMessage,
+	portfolioAnthropic,
+} from '../anthropic.js';
 import {
 	getGreetingSystemPrompt,
 	getSystemPrompt,
@@ -19,18 +22,19 @@ const SEARCH_FOCUS_VALUES = [
 
 export function createRunSonnetAgent({
 	streamTextImpl = streamText,
-	modelFactory = anthropic,
+	modelFactory = portfolioAnthropic,
 	searchPortfolioContext = createSearchPortfolioContext(),
 } = {}) {
 	return async function runSonnetAgent({ messages, mode, isGreeting }) {
 		const normalizedMode = normalizeChatMode(mode);
 		const toolCalls = [];
 		const retrievalState = { used: false };
+		const systemPrompt = isGreeting
+			? getGreetingSystemPrompt()
+			: getSystemPrompt(normalizedMode);
 		const result = streamTextImpl({
 			model: modelFactory(MODELS.CHAT),
-			system: isGreeting
-				? getGreetingSystemPrompt()
-				: getSystemPrompt(normalizedMode),
+			system: createAnthropicCachedSystemMessage(systemPrompt),
 			messages,
 			temperature: normalizedMode === 'slang' ? 0.9 : 0.8,
 			...(isGreeting
