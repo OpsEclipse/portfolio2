@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
 	applyChatEventToMessages,
+	getAssistantMessageStatusPresentation,
 	hasMessageStatusLabel,
 	parseSseChunk,
 	shouldShowChatEmptyState,
@@ -126,6 +127,56 @@ test('content event appends without removing statusLabel', () => {
 			statusLabel: 'Retrieved from the knowledge layer',
 		},
 	]);
+});
+
+test('content event clears a temporary pendingLabel once real text arrives', () => {
+	const messages = applyChatEventToMessages(
+		[
+			{
+				role: 'assistant',
+				content: '',
+				pendingLabel: 'Compacting...',
+			},
+		],
+		{ type: 'content', content: 'Hello world' }
+	);
+
+	assert.deepEqual(messages, [
+		{
+			role: 'assistant',
+			content: 'Hello world',
+			statusLabel: '',
+			pendingLabel: '',
+		},
+	]);
+});
+
+test('getAssistantMessageStatusPresentation marks pending labels as animated', () => {
+	assert.deepEqual(
+		getAssistantMessageStatusPresentation({
+			role: 'assistant',
+			content: '',
+			pendingLabel: 'Compacting...',
+		}),
+		{
+			label: 'Compacting...',
+			className: 'chat-thinking-text inline-block',
+		}
+	);
+});
+
+test('getAssistantMessageStatusPresentation keeps streamed status labels static', () => {
+	assert.deepEqual(
+		getAssistantMessageStatusPresentation({
+			role: 'assistant',
+			content: '',
+			statusLabel: 'Retrieved from the knowledge layer',
+		}),
+		{
+			label: 'Retrieved from the knowledge layer',
+			className: 'text-xs text-neutral-700',
+		}
+	);
 });
 
 test('hasMessageStatusLabel returns false when the label is missing', () => {

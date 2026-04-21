@@ -10,6 +10,20 @@ export function hasMessageStatusLabel(message) {
 	return Boolean(message?.statusLabel);
 }
 
+export function getAssistantMessageStatusPresentation(message = {}) {
+	if (message?.pendingLabel) {
+		return {
+			label: message.pendingLabel,
+			className: 'chat-thinking-text inline-block',
+		};
+	}
+
+	return {
+		label: message?.statusLabel || '',
+		className: 'text-xs text-neutral-700',
+	};
+}
+
 export function applyChatEventToMessages(messages = [], event = {}) {
 	const updated = [...messages];
 	const lastIndex = updated.length - 1;
@@ -20,18 +34,29 @@ export function applyChatEventToMessages(messages = [], event = {}) {
 	}
 
 	if (event.type === 'status') {
-		updated[lastIndex] = {
+		const nextMessage = {
 			...lastMessage,
 			statusLabel: event.label || '',
+		};
+		if ('pendingLabel' in lastMessage) {
+			nextMessage.pendingLabel = '';
+		}
+		updated[lastIndex] = {
+			...nextMessage,
 		};
 		return updated;
 	}
 
 	if (event.type === 'content' && event.content) {
-		updated[lastIndex] = {
+		const nextMessage = {
 			...lastMessage,
 			content: `${lastMessage.content || ''}${event.content}`,
+			statusLabel: lastMessage.statusLabel || '',
 		};
+		if ('pendingLabel' in lastMessage) {
+			nextMessage.pendingLabel = '';
+		}
+		updated[lastIndex] = nextMessage;
 	}
 
 	return updated;

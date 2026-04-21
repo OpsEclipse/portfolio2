@@ -14,10 +14,15 @@ import Loader from './Loader';
 import { usePortfolio } from '../context/PortfolioContext';
 import {
 	applyChatEventToMessages,
+	getAssistantMessageStatusPresentation,
 	parseSseChunk,
 	shouldShowChatEmptyState,
 	shouldShowChatSuggestions,
 } from '../lib/chat/chatWindowState.js';
+import {
+	buildMessagesForModel,
+	getCompactionPlan,
+} from '../lib/chat/conversationContext.js';
 
 const MIN_WIDTH = 280;
 const MIN_HEIGHT = 320;
@@ -96,6 +101,7 @@ function ChatWindow() {
 	const [messages, setMessages] = useState([]);
 	const [input, setInput] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
+	const [isCompacting, setIsCompacting] = useState(false);
 	const [rateLimitUntil, setRateLimitUntil] = useState(null);
 	const [rateLimitRemaining, setRateLimitRemaining] = useState(0);
 	const [showInitializing, setShowInitializing] = useState(true);
@@ -108,6 +114,8 @@ function ChatWindow() {
 	const [iconPosition, setIconPosition] = useState({ x: 0, y: 0 });
 	const iconPositionRef = useRef({ x: 0, y: 0 });
 	const [hasSubmittedUserMessage, setHasSubmittedUserMessage] = useState(false);
+	const [conversationSummary, setConversationSummary] = useState('');
+	const [compactedMessageCount, setCompactedMessageCount] = useState(0);
 	const hasInitializedResponsive = useRef(false);
 	const hasUserSetHeightRef = useRef(false);
 	const isDesktopDocked = viewportWidth >= DESKTOP_DOCK_BREAKPOINT;
@@ -407,23 +415,80 @@ function ChatWindow() {
 				return;
 			}
 
+			const baseMessages = resetMessages ? [] : messages;
+			const nextMessages = includeUserMessage
+				? [...baseMessages, userMessage]
+				: baseMessages;
+			const compactionPlan = getCompactionPlan({
+				messages: nextMessages,
+				compactedMessageCount,
+			});
+			const pendingLabel = compactionPlan ? 'Compacting...' : 'Thinking...';
+
 			if (resetMessages) {
 				setMessages([]);
+				setConversationSummary('');
+				setCompactedMessageCount(0);
 			}
 
 			if (includeUserMessage) {
-				setMessages((prev) => [...prev, userMessage]);
+				setMessages((prev) => [
+					...(resetMessages ? [] : prev),
+					userMessage,
+					{ role: 'assistant', content: '', pendingLabel },
+				]);
 				setInput('');
 			}
 
 			setIsLoading(true);
 
 			try {
+				let nextSummary = conversationSummary;
+				let nextCompactedCount = compactedMessageCount;
+
+				if (compactionPlan) {
+					setIsCompacting(true);
+					const compactResponse = await fetch('/api/chat/compact', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							summary: conversationSummary,
+							messages: compactionPlan.messagesToCompact,
+						}),
+					});
+
+					if (!compactResponse.ok) {
+						let compactErrorMessage = 'Failed to compact conversation';
+						try {
+							const compactErrorData = await compactResponse.json();
+							if (compactErrorData?.error) {
+								compactErrorMessage = compactErrorData.error;
+							}
+						} catch {
+							// Ignore JSON parse errors for error responses.
+						}
+
+						throw new Error(compactErrorMessage);
+					}
+
+					const compactData = await compactResponse.json();
+					nextSummary = compactData?.summary || '';
+					nextCompactedCount = compactionPlan.nextCompactedMessageCount;
+					setConversationSummary(nextSummary);
+					setCompactedMessageCount(nextCompactedCount);
+				}
+
+				setIsCompacting(false);
+
 				const response = await fetch('/api/chat', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
-						messages: [userMessage],
+						messages: buildMessagesForModel({
+							summary: nextSummary,
+							messages: nextMessages,
+							compactedMessageCount: nextCompactedCount,
+						}),
 						mode: modeOverride ?? mode,
 						intent,
 					}),
@@ -447,21 +512,19 @@ function ChatWindow() {
 							Number.parseInt(retryAfterHeader, 10) || 30
 						);
 						setRateLimitUntil(Date.now() + retryAfterSeconds * 1000);
-						setMessages((prev) => [
-							...prev,
-							{
+						setMessages((prev) => {
+							const updated = [...prev];
+							updated[updated.length - 1] = {
 								role: 'assistant',
 								content: `Rate limit exceeded. Please try again in ${retryAfterSeconds}s.`,
-							},
-						]);
+							};
+							return updated;
+						});
 						return;
 					}
 
 					throw new Error(errorMessage);
 				}
-
-				// Add empty assistant message for streaming
-				setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
 				const reader = response.body.getReader();
 				const decoder = new TextDecoder();
@@ -494,18 +557,29 @@ function ChatWindow() {
 			} catch (error) {
 				console.error('Chat error:', error);
 				sseBufferRef.current = '';
-				setMessages((prev) => [
-					...prev,
-					{
+				setMessages((prev) => {
+					const updated = [...prev];
+					updated[updated.length - 1] = {
 						role: 'assistant',
-						content: error?.message || 'Sorry, I encountered an error. Please try again.',
-					},
-				]);
+						content:
+							error?.message || 'Sorry, I encountered an error. Please try again.',
+					};
+					return updated;
+				});
 			} finally {
+				setIsCompacting(false);
 				setIsLoading(false);
 			}
 		},
-		[isLoading, mode, rateLimitRemaining, rateLimitUntil]
+		[
+			compactedMessageCount,
+			conversationSummary,
+			isLoading,
+			messages,
+			mode,
+			rateLimitRemaining,
+			rateLimitUntil,
+		]
 	);
 
 	const handleSend = () => {
@@ -548,6 +622,8 @@ function ChatWindow() {
 		const totalMs = (messages.length - 1) * STAGGER_MS + ANIM_DURATION_MS + 50;
 		const finalT = window.setTimeout(() => {
 			setMessages([]);
+			setConversationSummary('');
+			setCompactedMessageCount(0);
 			setHasSubmittedUserMessage(false);
 			setClearingIndices(new Set());
 			clearTimeoutsRef.current = [];
@@ -606,6 +682,14 @@ function ChatWindow() {
 			handleSend();
 		}
 	};
+
+	const sendButtonLabel = isLoading
+		? isCompacting
+			? 'Compacting...'
+			: 'Sending...'
+		: isRateLimited
+			? `Wait ${rateLimitRemaining || 1}s`
+			: 'Send';
 
 	if (!isMounted) {
 		return null;
@@ -770,20 +854,25 @@ function ChatWindow() {
 										)}
 									</div>
 								) : (
-									<>
-										{isLoaded && messages.map((msg, idx) => {
-											const { body, sourcesText } = splitSources(msg.content);
-											const sources = parseSources(sourcesText);
-											return (
-												<div
-													key={idx}
+										<>
+											{isLoaded && messages.map((msg, idx) => {
+												const { body, sourcesText } = splitSources(msg.content);
+												const sources = parseSources(sourcesText);
+												const statusPresentation =
+													msg.role === 'assistant'
+														? getAssistantMessageStatusPresentation(msg)
+														: { label: '', className: '' };
+												return (
+													<div
+														key={idx}
 													className={clearingIndices.has(idx) ? 'chat-message--clearing' : undefined}
 												>
-												<ChatMessage
-													variant={msg.role === 'user' ? 'user' : 'ai'}
-													content={body}
-													statusLabel={msg.role === 'assistant' ? msg.statusLabel : ''}
-												>
+													<ChatMessage
+														variant={msg.role === 'user' ? 'user' : 'ai'}
+														content={body}
+														statusLabel={statusPresentation.label}
+														statusLabelClassName={statusPresentation.className}
+													>
 													{sources.length > 0 && (
 														<div className="chat-sources">
 															<div className="chat-sources__header">
@@ -821,7 +910,15 @@ function ChatWindow() {
 														</div>
 													)}
 													{isLoading && idx === messages.length - 1 && msg.role === 'assistant' && !msg.content && (
-														<span className="animate-pulse">...</span>
+														<span
+															className={
+																msg.pendingLabel
+																	? 'chat-thinking-text inline-block'
+																	: 'animate-pulse'
+															}
+														>
+															...
+														</span>
 													)}
 												</ChatMessage>
 											</div>
@@ -849,12 +946,6 @@ function ChatWindow() {
 														/>
 													</button>
 												))}
-											</div>
-										)}
-										{isLoading && (
-											<div className="text-left flex items-start gap-2">
-												<span className="text-blue-900 font-[4px]">&gt;</span>
-												<span className="thinking-shimmer text-xs font-medium">Thinking...</span>
 											</div>
 										)}
 									</>
@@ -916,11 +1007,7 @@ function ChatWindow() {
 							onClick={handleSend}
 							disabled={isLoading || !input.trim() || isRateLimited}
 						>
-							{isLoading
-								? 'Sending...'
-								: isRateLimited
-									? `Wait ${rateLimitRemaining || 1}s`
-									: 'Send'}
+							{sendButtonLabel}
 						</Button>
 						<Button onClick={handleClear} disabled={isLoading || clearingIndices.size > 0}>
 							Clear

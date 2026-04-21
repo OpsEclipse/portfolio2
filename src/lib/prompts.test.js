@@ -58,6 +58,13 @@ test('getSystemPrompt still includes injected context for legacy callers', () =>
 	assert.match(prompt, /chunk-1/);
 });
 
+test('getSystemPrompt explains how to use a compacted conversation summary message', () => {
+	const prompt = getSystemPrompt('casual');
+
+	assert.match(prompt, /conversation summary/i);
+	assert.match(prompt, /newer verbatim messages/i);
+});
+
 test('getSystemPrompt keeps no-context portfolio claims unverified instead of falling back to memory', () => {
 	const prompt = getSystemPrompt('casual');
 
