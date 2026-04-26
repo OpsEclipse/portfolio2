@@ -40,6 +40,11 @@ const ProjectCard = ({
 	const sliderRef = useRef(null);
 	const [canScrollLeft, setCanScrollLeft] = useState(false);
 	const [canScrollRight, setCanScrollRight] = useState(true);
+	const titleNode = (
+		<h2 className="text-[11px] sm:text-[12px] font-medium">
+			{title}
+		</h2>
+	);
 
 	const checkScrollButtons = () => {
 		if (sliderRef.current) {
@@ -92,20 +97,24 @@ const ProjectCard = ({
 		>
 			<div className="flex justify-between items-center w-full">
 				<div className="flex gap-1 items-center cursor-pointer hover:underline underline-offset-2 decoration-border transition-all">
-					<a
-						href={repoLink}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="flex items-center gap-1 text-text-primary"
-					>
-						<h2 className="text-[11px] sm:text-[12px] font-medium">
-							{title}
-						</h2>
-						<ArrowUpRight
-							size={12}
-							className="sm:w-[14px] sm:h-[14px] text-text-muted"
-						/>
-					</a>
+					{repoLink ? (
+						<a
+							href={repoLink}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center gap-1 text-text-primary"
+						>
+							{titleNode}
+							<ArrowUpRight
+								size={12}
+								className="sm:w-[14px] sm:h-[14px] text-text-muted"
+							/>
+						</a>
+					) : (
+						<div className="flex items-center gap-1 text-text-primary">
+							{titleNode}
+						</div>
+					)}
 				</div>
 				{demoLink && (
 					<a
