@@ -3,6 +3,7 @@
 import X from 'lucide-react/dist/esm/icons/x.js';
 
 import { usePortfolio } from '../context/PortfolioContext';
+import { getImageModalCloseClassName } from '../lib/imageModalStyles';
 
 const ImageModal = () => {
 	const { selectedImage: image, closePopup: onClose } = usePortfolio();
@@ -18,7 +19,7 @@ const ImageModal = () => {
 			>
 				<button
 					onClick={onClose}
-					className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+					className={getImageModalCloseClassName(image)}
 					aria-label="Close"
 				>
 					<X size={32} />
