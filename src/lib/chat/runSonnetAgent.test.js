@@ -16,6 +16,33 @@ function createClosedTextStream() {
 	});
 }
 
+test('propagates provider stream errors instead of returning an empty reply', async () => {
+	const providerError = new Error('Anthropic service unavailable');
+	const runSonnetAgent = createRunSonnetAgent({
+		streamTextImpl: () => ({
+			fullStream: (async function* () {
+				yield { type: 'error', error: providerError };
+			})(),
+		}),
+		modelFactory: () => 'fake-model',
+	});
+
+	const { textStream } = await runSonnetAgent({
+		messages: [{ role: 'user', content: 'hello' }],
+		mode: 'casual',
+		isGreeting: true,
+	});
+
+	await assert.rejects(
+		async () => {
+			for await (const _chunk of textStream) {
+				// Consume the stream.
+			}
+		},
+		/Anthropic service unavailable/
+	);
+});
+
 test('adds Anthropic cache control to the system prompt without caching chat history', async () => {
 	let streamTextOptions;
 	const messages = [{ role: 'user', content: 'Tell me about Sparsh.' }];
@@ -23,7 +50,7 @@ test('adds Anthropic cache control to the system prompt without caching chat his
 	const runSonnetAgent = createRunSonnetAgent({
 		streamTextImpl: (options) => {
 			streamTextOptions = options;
-			return { textStream: createClosedTextStream() };
+			return { fullStream: createClosedTextStream() };
 		},
 		modelFactory: () => 'fake-model',
 	});
@@ -45,7 +72,7 @@ test('adds the same Anthropic cache control to greeting requests', async () => {
 	const runSonnetAgent = createRunSonnetAgent({
 		streamTextImpl: (options) => {
 			streamTextOptions = options;
-			return { textStream: createClosedTextStream() };
+			return { fullStream: createClosedTextStream() };
 		},
 		modelFactory: () => 'fake-model',
 	});

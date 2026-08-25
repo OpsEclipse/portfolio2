@@ -56,6 +56,31 @@ test('streams direct model text as SSE chunks and ends with DONE', async () => {
 	assert.match(body, /data: \[DONE\]/);
 });
 
+test('sends a visible fallback when the model stream is empty', async () => {
+	const handler = createPostHandler({
+		runSonnetAgent: async () => ({
+			textStream: toTextStream([]),
+			toolDocs: [],
+		}),
+	});
+
+	const request = new Request('http://localhost/api/chat', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({
+			messages: [{ role: 'user', content: 'hello' }],
+			mode: 'casual',
+		}),
+	});
+
+	const response = await handler(request);
+	const events = getSseEvents(await readSseBody(response));
+
+	assert.equal(events.length, 1);
+	assert.equal(events[0].type, 'content');
+	assert.ok(events[0].content.length > 0);
+});
+
 test('tool-backed answers emit a status event before content', async () => {
 	const retrievalState = { used: false };
 	const handler = createPostHandler({

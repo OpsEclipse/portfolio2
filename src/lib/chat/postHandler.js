@@ -157,6 +157,7 @@ export function createPostHandler({
 
 			const readableStream = new ReadableStream({
 				async start(controller) {
+					let hasAssistantText = false;
 					try {
 						let pending = '';
 						let usedSourcesText = '';
@@ -181,9 +182,12 @@ export function createPostHandler({
 							});
 						};
 
-						const enqueueContent = (text) => {
+						const enqueueContent = (text, isAssistantText = true) => {
 							if (!text) {
 								return;
+							}
+							if (isAssistantText && text.trim()) {
+								hasAssistantText = true;
 							}
 
 							if (!statusSent) {
@@ -306,6 +310,12 @@ export function createPostHandler({
 							pending = '';
 						}
 
+						if (!hasAssistantText) {
+							enqueueContent(
+								'Sorry, I could not generate a response. Please try again.'
+							);
+						}
+
 						const uniqueToolDocs = dedupeSources(toolDocs);
 						const usedDocs = filterDocsByUsedSources(
 							uniqueToolDocs,
@@ -317,13 +327,23 @@ export function createPostHandler({
 								: '';
 
 						if (sourceSuffix) {
-							enqueueContent(sourceSuffix);
+							enqueueContent(sourceSuffix, false);
 						}
 
 						controller.enqueue(encoder.encode('data: [DONE]\n\n'));
 						controller.close();
 					} catch (error) {
 						console.error('Stream error:', error);
+						if (!hasAssistantText) {
+							const payload = JSON.stringify({
+								type: 'content',
+								content: 'Sorry, I could not generate a response. Please try again.',
+							});
+							controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+							controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+							controller.close();
+							return;
+						}
 						const payload = JSON.stringify({
 							error: 'Stream error occurred',
 						});

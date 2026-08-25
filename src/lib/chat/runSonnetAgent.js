@@ -20,6 +20,17 @@ const SEARCH_FOCUS_VALUES = [
 	'all',
 ];
 
+async function* textDeltas(fullStream) {
+	for await (const part of fullStream) {
+		if (part.type === 'text-delta') {
+			yield part.text;
+		}
+		if (part.type === 'error') {
+			throw part.error;
+		}
+	}
+}
+
 export function createRunSonnetAgent({
 	streamTextImpl = streamText,
 	modelFactory = portfolioAnthropic,
@@ -61,7 +72,7 @@ export function createRunSonnetAgent({
 		});
 
 		return {
-			textStream: result.textStream,
+			textStream: textDeltas(result.fullStream),
 			toolDocs: toolCalls,
 			retrievalState,
 		};
